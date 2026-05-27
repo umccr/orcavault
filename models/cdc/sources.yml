@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: orcabus_sequence_run_manager
+    database: awsdatacatalog
+    schema: orcabus_sequence_run_manager
+    tables:
+      - name: sequence_run_manager_sequence

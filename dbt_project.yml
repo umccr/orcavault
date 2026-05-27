@@ -1,0 +1,23 @@
+name: 'orcavault'
+config-version: 2
+version: '1.0.0'
+
+profile: 'orcavault'
+
+model-paths: [ "models" ]
+analysis-paths: [ "analyses" ]
+test-paths: [ "tests" ]
+seed-paths: [ "seeds" ]
+macro-paths: [ "macros" ]
+snapshot-paths: [ "snapshots" ]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  orcavault:
+    +materialized: view
+    dcl:
+      +schema: dcl
+      +materialized: table

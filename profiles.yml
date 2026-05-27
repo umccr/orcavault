@@ -1,0 +1,13 @@
+orcavault:
+  outputs:
+    dev:
+      type: redshift
+      method: iam
+      host: "{{ env_var('DBT_ENV_SECRET_HOST') }}"
+      user: "{{ env_var('DBT_ENV_SECRET_USER') }}"
+      port: 5439
+      database: orcavault
+      schema: public
+      region: ap-southeast-2
+      threads: 4
+  target: dev
