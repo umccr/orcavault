@@ -1,0 +1,23 @@
+.idea/
+.local/
+.venv/
+venv/
+.env/
+.env
+.temp/
+nogit/
+
+# exclude any local dev data
+dev/data/*
+!dev/data/.gitkeep
+
+### dbt template
+target/
+dbt_modules/
+dbt_packages/
+logs/
+.user.yml
+
+*.log
+
+.DS_Store
