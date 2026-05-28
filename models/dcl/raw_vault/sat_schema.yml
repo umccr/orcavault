@@ -9,11 +9,6 @@ models:
       - type: primary_key
         columns: [ sequencing_run_hk, load_datetime ]
         warn_unenforced: false
-      - type: foreign_key
-        columns: [ sequencing_run_hk ]
-        to: ref('hub_sequencing_run')
-        to_columns: [ sequencing_run_hk ]
-        warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -25,6 +20,10 @@ models:
         data_type: char(64)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_sequencing_run')
+                field: sequencing_run_hk
       - name: load_datetime
         data_type: timestamptz
         data_tests:
