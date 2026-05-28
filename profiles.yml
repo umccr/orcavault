@@ -10,4 +10,6 @@ orcavault:
       schema: public
       region: ap-southeast-2
       threads: 4
+      ra3_node: true
+      datasharing: true
   target: dev
