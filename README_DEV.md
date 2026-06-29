@@ -20,6 +20,10 @@ pip3 install -r requirements.txt
 
 Note that we use Python3 virtual environment (conda, uv, venv or any equivalent) for managing dbt-core cli and other commandline tools (if any). No Python development nor syntax familiarity is expected. We are SQL shop! See the next section.
 
+## AWS Session
+
+Use your usual way of AWS CLI setup to authenticate. Manage and switch authenticated session and AWS profile however you like. Be consistent with your setup in your way. You do not need to change that. Any README.md guideline "step" around AWS CLI authenticated session is just "an example" only. The step only _signals_ that you need to be authenticated at the point. How is – up to you.
+
 ## Skills
 
 Please do read all the documentation at https://github.com/umccr/orcahouse-doc
