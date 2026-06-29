@@ -5,4 +5,52 @@ sources:
     database: awsdatacatalog
     schema: orcabus_sequence_run_manager
     tables:
+      - name: sequence_run_manager_comment
+      - name: sequence_run_manager_libraryassociation
+      - name: sequence_run_manager_samplesheet
       - name: sequence_run_manager_sequence
+      - name: sequence_run_manager_state
+
+  - name: orcabus_workflow_manager
+    database: awsdatacatalog
+    schema: orcabus_workflow_manager
+    tables:
+      - name: workflow_manager_comment
+      - name: workflow_manager_library
+      - name: workflow_manager_libraryassociation
+      - name: workflow_manager_payload
+      - name: workflow_manager_readset
+      - name: workflow_manager_state
+      - name: workflow_manager_workflow
+      - name: workflow_manager_workflowrun
+      - name: workflow_manager_workflowrun_readsets
+
+  - name: orcabus_metadata_manager
+    database: awsdatacatalog
+    schema: orcabus_metadata_manager
+    tables:
+      - name: app_contact
+      - name: app_historicalcontact
+      - name: app_historicalindividual
+      - name: app_historicallibrary
+      - name: app_historicallibraryprojectlink
+      - name: app_historicalproject
+      - name: app_historicalprojectcontactlink
+      - name: app_historicalsample
+      - name: app_historicalsubject
+      - name: app_historicalsubjectindividuallink
+      - name: app_individual
+      - name: app_library
+      - name: app_libraryprojectlink
+      - name: app_project
+      - name: app_projectcontactlink
+      - name: app_sample
+      - name: app_subject
+      - name: app_subjectindividuallink
+
+  - name: orcabus_filemanager
+    database: awsdatacatalog
+    schema: orcabus_filemanager
+    tables:
+      - name: s3_crawl
+      - name: s3_object
