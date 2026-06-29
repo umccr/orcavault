@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: data_portal
+    database: awsdatacatalog
+    schema: data_portal
+    tables:
+      - name: legacy_data_portal_analysisresult
+      - name: legacy_data_portal_analysisresult_gdsfiles
+      - name: legacy_data_portal_analysisresult_s3objects
+      - name: legacy_data_portal_batch
+      - name: legacy_data_portal_batchrun
+      - name: legacy_data_portal_configuration
+      - name: legacy_data_portal_fastqlistrow
+      - name: legacy_data_portal_gdsfile
+      - name: legacy_data_portal_labmetadata
+      - name: legacy_data_portal_libraryrun
+      - name: legacy_data_portal_libraryrun_workflows
+      - name: legacy_data_portal_limsrow
+      - name: legacy_data_portal_s3lims
+      - name: legacy_data_portal_s3object
+      - name: legacy_data_portal_sequence
+      - name: legacy_data_portal_sequencerun
+      - name: legacy_data_portal_workflow
