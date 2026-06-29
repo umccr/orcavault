@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: tsa
+    database: orcavault
+    schema: tsa
+    tables:
+      - name: spreadsheet__library_tracking_metadata
+      - name: spreadsheet__google_lims

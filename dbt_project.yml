@@ -18,6 +18,9 @@ clean-targets:
 models:
   orcavault:
     +materialized: view
+    psa:
+      +schema: psa
+      +materialized: table
     dcl:
       +schema: dcl
       +materialized: table
