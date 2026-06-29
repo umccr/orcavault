@@ -1,0 +1,127 @@
+version: 2
+
+models:
+
+  - name: spreadsheet__library_tracking_metadata
+    columns:
+      - name: assay
+        data_type: varchar
+      - name: comments
+        data_type: varchar
+      - name: coverage
+        data_type: varchar
+      - name: experiment_id
+        data_type: varchar
+      - name: external_sample_id
+        data_type: varchar
+      - name: external_subject_id
+        data_type: varchar
+      - name: library_id
+        data_type: varchar
+      - name: override_cycles
+        data_type: varchar
+      - name: phenotype
+        data_type: varchar
+      - name: project_name
+        data_type: varchar
+      - name: project_owner
+        data_type: varchar
+      - name: qpcr_id
+        data_type: varchar
+      - name: quality
+        data_type: varchar
+      - name: run
+        data_type: varchar
+      - name: sample_id
+        data_type: varchar
+      - name: sample_name
+        data_type: varchar
+      - name: samplesheet_sample_id
+        data_type: varchar
+      - name: source
+        data_type: varchar
+      - name: subject_id
+        data_type: varchar
+      - name: truseq_index
+        data_type: varchar
+      - name: type
+        data_type: varchar
+      - name: workflow
+        data_type: varchar
+      - name: r_rna
+        data_type: varchar
+      - name: study
+        data_type: varchar
+      - name: sheet_name
+        data_type: varchar
+      - name: load_datetime
+        data_type: timestamptz
+      - name: record_source
+        data_type: varchar(255)
+
+  - name: spreadsheet__google_lims
+    columns:
+      - name: illumina_id
+        data_type: varchar
+      - name: run
+        data_type: varchar
+      - name: timestamp
+        data_type: varchar
+      - name: subject_id
+        data_type: varchar
+      - name: sample_id
+        data_type: varchar
+      - name: library_id
+        data_type: varchar
+      - name: external_subject_id
+        data_type: varchar
+      - name: external_sample_id
+        data_type: varchar
+      - name: external_library_id
+        data_type: varchar
+      - name: sample_name
+        data_type: varchar
+      - name: project_owner
+        data_type: varchar
+      - name: project_name
+        data_type: varchar
+      - name: project_custodian
+        data_type: varchar
+      - name: type
+        data_type: varchar
+      - name: assay
+        data_type: varchar
+      - name: override_cycles
+        data_type: varchar
+      - name: phenotype
+        data_type: varchar
+      - name: source
+        data_type: varchar
+      - name: quality
+        data_type: varchar
+      - name: topup
+        data_type: varchar
+      - name: secondary_analysis
+        data_type: varchar
+      - name: workflow
+        data_type: varchar
+      - name: tags
+        data_type: varchar
+      - name: fastq
+        data_type: varchar
+      - name: number_fastqs
+        data_type: varchar
+      - name: results
+        data_type: varchar
+      - name: trello
+        data_type: varchar
+      - name: notes
+        data_type: varchar
+      - name: todo
+        data_type: varchar
+      - name: sheet_name
+        data_type: varchar
+      - name: load_datetime
+        data_type: timestamptz
+      - name: record_source
+        data_type: varchar(255)
