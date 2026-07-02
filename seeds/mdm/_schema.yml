@@ -1,0 +1,10 @@
+version: 2
+
+seeds:
+
+  - name: mdm__workflow_run
+    config:
+      column_types:
+        base_portal_run_id: char(16)
+        alias_portal_run_id: char(16)
+        comment: varchar

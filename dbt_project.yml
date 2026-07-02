@@ -24,3 +24,7 @@ models:
     dcl:
       +schema: dcl
       +materialized: table
+
+seeds:
+  orcavault:
+    +schema: seed
