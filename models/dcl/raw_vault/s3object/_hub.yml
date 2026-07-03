@@ -1,0 +1,27 @@
+version: 2
+
+models:
+
+  - name: hub_s3object
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk ]
+        warn_unenforced: false
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - unique
+          - not_null
+      - name: bucket
+        data_type: varchar(63)
+      - name: key
+        data_type: varchar(1024)
+      - name: load_datetime
+        data_type: timestamptz
+      - name: record_source
+        data_type: varchar(100)
+      - name: last_seen_datetime
+        data_type: timestamptz
