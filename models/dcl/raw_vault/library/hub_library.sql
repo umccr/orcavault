@@ -164,7 +164,7 @@ final as (
         cast(library_hk         as char(64))       as library_hk,
         cast(library_id         as varchar(255))   as library_id,
         cast(load_datetime      as timestamptz)    as load_datetime,
-        cast(record_source      as varchar(255))   as record_source,
+        cast(record_source      as varchar(100))   as record_source,
         cast(last_seen_datetime as timestamptz)    as last_seen_datetime
     from transformed
 
