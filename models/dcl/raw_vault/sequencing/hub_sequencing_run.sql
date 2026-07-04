@@ -30,9 +30,9 @@ with legacy_source as (
     union all
     select instrument_run_id as sequencing_run_id, 'data_portal_libraryrun'   as record_source from {{ source('data_portal', 'legacy_data_portal_libraryrun') }}
     union all
-    select instrument_run_id as sequencing_run_id, 'data_portal_limsrow'      as record_source from {{ source('data_portal', 'legacy_data_portal_limsrow') }}
+    select illumina_id       as sequencing_run_id, 'data_portal_limsrow'      as record_source from {{ source('data_portal', 'legacy_data_portal_limsrow') }}
     union all
-    select illumina_id        as sequencing_run_id, 'spreadsheet__google_lims' as record_source from {{ ref('spreadsheet__google_lims') }}
+    select illumina_id       as sequencing_run_id, 'spreadsheet__google_lims' as record_source from {{ ref('spreadsheet__google_lims') }}
 
 ),
 
@@ -136,7 +136,7 @@ final as (
         cast(sequencing_run_hk  as char(64))       as sequencing_run_hk,
         cast(sequencing_run_id  as varchar(255))   as sequencing_run_id,
         cast(load_datetime      as timestamptz)    as load_datetime,
-        cast(record_source      as varchar(255))   as record_source,
+        cast(record_source      as varchar(100))   as record_source,
         cast(last_seen_datetime as timestamptz)    as last_seen_datetime
     from transformed
 

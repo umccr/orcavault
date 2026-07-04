@@ -20,6 +20,6 @@ models:
       - name: load_datetime
         data_type: timestamptz
       - name: record_source
-        data_type: varchar(255)
+        data_type: varchar(100)
       - name: last_seen_datetime
         data_type: timestamptz
