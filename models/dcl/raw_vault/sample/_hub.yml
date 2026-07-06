@@ -1,0 +1,47 @@
+version: 2
+
+models:
+
+  - name: hub_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ sample_hk ]
+        warn_unenforced: false
+    columns:
+      - name: sample_hk
+        data_type: char(64)
+        data_tests:
+          - unique
+          - not_null
+      - name: sample_id
+        data_type: varchar(255)
+      - name: load_datetime
+        data_type: timestamptz
+      - name: record_source
+        data_type: varchar(100)
+      - name: last_seen_datetime
+        data_type: timestamptz
+
+  - name: hub_external_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ external_sample_hk ]
+        warn_unenforced: false
+    columns:
+      - name: external_sample_hk
+        data_type: char(64)
+        data_tests:
+          - unique
+          - not_null
+      - name: external_sample_id
+        data_type: varchar(255)
+      - name: load_datetime
+        data_type: timestamptz
+      - name: record_source
+        data_type: varchar(100)
+      - name: last_seen_datetime
+        data_type: timestamptz
