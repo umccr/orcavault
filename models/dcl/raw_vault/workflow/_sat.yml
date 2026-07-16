@@ -1,0 +1,231 @@
+version: 2
+
+models:
+
+  - name: sat_workflow_run_portal_legacy
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ workflow_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: id
+        data_type: bigint
+      - name: wfr_name
+        data_type: varchar(255)
+      - name: type_name
+        data_type: varchar(100)
+      - name: wfr_id
+        data_type: varchar(255)
+      - name: wfl_id
+        data_type: varchar(255)
+      - name: wfv_id
+        data_type: varchar(255)
+      - name: version
+        data_type: varchar(100)
+      - name: start_datetime
+        data_type: timestamptz
+      - name: end_datetime
+        data_type: timestamptz
+      - name: end_status
+        data_type: varchar(100)
+      - name: notified
+        data_type: smallint
+      - name: sequence_run_id
+        data_type: bigint
+      - name: batch_run_id
+        data_type: bigint
+
+  - name: sat_workflow_run_detail
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ workflow_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: execution_id
+        data_type: varchar(255)
+      - name: workflow_run_name
+        data_type: varchar(255)
+      - name: comment
+        data_type: varchar(65535)
+      - name: analysis_run_id
+        data_type: char(26)
+      - name: workflow_orcabus_id
+        data_type: char(26)
+      - name: workflow_name
+        data_type: varchar(255)
+      - name: workflow_version
+        data_type: varchar(100)
+      - name: workflow_execution_engine
+        data_type: varchar(100)
+      - name: workflow_execution_engine_pipeline_id
+        data_type: varchar(255)
+      - name: workflow_validation_state
+        data_type: varchar(100)
+      - name: workflow_code_version
+        data_type: varchar(100)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
+
+  - name: sat_workflow_run_comment
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ workflow_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: comment
+        data_type: varchar(65535)
+      - name: created_at
+        data_type: timestamptz
+      - name: created_by
+        data_type: varchar(100)
+      - name: updated_at
+        data_type: timestamptz
+      - name: is_deleted
+        data_type: varchar(100)
+      - name: workflow_run_id
+        data_type: char(26)
+      - name: analysis_run_id
+        data_type: char(26)
+      - name: severity
+        data_type: varchar(100)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
+
+  - name: sat_workflow_run_state
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ workflow_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: status
+        data_type: varchar(255)
+      - name: state_timestamp
+        data_type: timestamptz
+      - name: comment
+        data_type: varchar(1024)
+      - name: payload_id
+        data_type: char(26)
+      - name: workflow_run_id
+        data_type: char(26)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
