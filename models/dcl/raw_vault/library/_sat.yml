@@ -1,0 +1,245 @@
+version: 2
+
+models:
+
+  - name: sat_library_glims
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: lims_timestamp
+        data_type: date
+      - name: workflow
+        data_type: varchar(255)
+      - name: phenotype
+        data_type: varchar(255)
+      - name: type
+        data_type: varchar(255)
+      - name: assay
+        data_type: varchar(255)
+      - name: quality
+        data_type: varchar(255)
+      - name: source
+        data_type: varchar(255)
+
+  - name: sat_library_plims
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: lims_timestamp
+        data_type: date
+      - name: workflow
+        data_type: varchar(255)
+      - name: phenotype
+        data_type: varchar(255)
+      - name: type
+        data_type: varchar(255)
+      - name: assay
+        data_type: varchar(255)
+      - name: quality
+        data_type: varchar(255)
+      - name: source
+        data_type: varchar(255)
+
+  - name: sat_library_plab
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: workflow
+        data_type: varchar(255)
+      - name: phenotype
+        data_type: varchar(255)
+      - name: type
+        data_type: varchar(255)
+      - name: assay
+        data_type: varchar(255)
+      - name: quality
+        data_type: varchar(255)
+      - name: source
+        data_type: varchar(255)
+      - name: truseqindex
+        data_type: varchar(255)
+
+  - name: sat_library_glab
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: workflow
+        data_type: varchar(255)
+      - name: phenotype
+        data_type: varchar(255)
+      - name: type
+        data_type: varchar(255)
+      - name: assay
+        data_type: varchar(255)
+      - name: quality
+        data_type: varchar(255)
+      - name: source
+        data_type: varchar(255)
+      - name: truseq_index
+        data_type: varchar(255)
+
+  - name: sat_library_mm
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: workflow
+        data_type: varchar(255)
+      - name: phenotype
+        data_type: varchar(255)
+      - name: type
+        data_type: varchar(255)
+      - name: assay
+        data_type: varchar(255)
+      - name: quality
+        data_type: varchar(255)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
