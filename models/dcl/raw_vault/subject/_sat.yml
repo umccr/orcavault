@@ -1,0 +1,85 @@
+version: 2
+
+models:
+
+  - name: sat_external_subject_mm
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ external_subject_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - external_subject_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_external_subject')
+                field: external_subject_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
+
+  - name: sat_internal_subject_mm
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ internal_subject_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - internal_subject_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: internal_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_internal_subject')
+                field: internal_subject_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: source
+        data_type: varchar(255)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
