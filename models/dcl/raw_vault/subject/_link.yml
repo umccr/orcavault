@@ -1,0 +1,45 @@
+version: 2
+
+models:
+
+  - name: link_internal_to_external_subject
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ internal_external_subject_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - external_subject_hk
+              - internal_subject_hk
+    columns:
+      - name: internal_external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_external_subject')
+                field: external_subject_hk
+      - name: internal_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_internal_subject')
+                field: internal_subject_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
