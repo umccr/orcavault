@@ -1,0 +1,381 @@
+version: 2
+
+models:
+
+  - name: link_library_project
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_project_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - project_hk
+              - library_hk
+    columns:
+      - name: library_project_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: project_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_project')
+                field: project_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_experiment
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_experiment_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - experiment_hk
+              - library_hk
+    columns:
+      - name: library_experiment_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: experiment_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_experiment')
+                field: experiment_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_external_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_external_sample_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - external_sample_hk
+              - library_hk
+    columns:
+      - name: library_external_sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: external_sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_external_sample')
+                field: external_sample_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_external_subject
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_external_subject_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - external_subject_hk
+              - library_hk
+    columns:
+      - name: library_external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_external_subject')
+                field: external_subject_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_internal_subject
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_internal_subject_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - internal_subject_hk
+              - library_hk
+    columns:
+      - name: library_internal_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: internal_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_internal_subject')
+                field: internal_subject_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_ownership
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_owner_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - owner_hk
+              - library_hk
+    columns:
+      - name: library_owner_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: owner_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_owner')
+                field: owner_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sample_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - sample_hk
+              - library_hk
+    columns:
+      - name: library_sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_sample')
+                field: sample_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_sequencing_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sequencing_run_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - sequencing_run_hk
+              - library_hk
+    columns:
+      - name: library_sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_sequencing_run')
+                field: sequencing_run_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+
+  - name: link_library_workflow_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_workflow_run_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+              - library_hk
+    columns:
+      - name: library_workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: library_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
