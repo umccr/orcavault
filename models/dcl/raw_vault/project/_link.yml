@@ -1,0 +1,45 @@
+version: 2
+
+models:
+
+  - name: link_project_ownership
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ project_owner_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - owner_hk
+              - project_hk
+    columns:
+      - name: project_owner_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: owner_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_owner')
+                field: owner_hk
+      - name: project_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_project')
+                field: project_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
