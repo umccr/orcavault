@@ -125,3 +125,90 @@ models:
         data_type: timestamptz
       - name: record_source
         data_type: varchar(255)
+
+  - name: spreadsheet__ica_usage_report
+    description: Append-only ICA usage history loaded from the transient spreadsheet report.
+    columns:
+      - name: usage_id
+        data_type: varchar
+      - name: usage_hash
+        description: Legacy-compatible SHA-256 hash of the cleaned usage ID and billing date.
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: uc_name
+        data_type: varchar
+      - name: billable_account_id
+        data_type: varchar
+      - name: account_name
+        data_type: varchar
+      - name: account_type
+        data_type: varchar
+      - name: usage_context
+        data_type: varchar
+      - name: usage_context_type
+        data_type: varchar
+      - name: user_name
+        data_type: varchar
+      - name: product
+        data_type: varchar
+      - name: usage_type_description
+        data_type: varchar
+      - name: quantity
+        data_type: numeric(38,20)
+      - name: usage_unit
+        data_type: varchar
+      - name: price_per_unit
+        data_type: numeric(25,20)
+      - name: cost
+        data_type: numeric(25,20)
+      - name: cost_unit
+        data_type: varchar
+      - name: category
+        data_type: varchar
+      - name: usage_timestamp
+        data_type: date
+      - name: region
+        data_type: varchar
+      - name: metadata
+        data_type: varchar
+      - name: billing_date
+        data_type: date
+      - name: ica_execution_id
+        data_type: varchar
+      - name: license
+        data_type: varchar
+      - name: pipeline_uuid
+        data_type: varchar
+      - name: status
+        data_type: varchar
+      - name: domain
+        data_type: varchar
+      - name: type
+        data_type: varchar
+      - name: workflow_name
+        data_type: varchar
+      - name: workflow_version
+        data_type: varchar
+      - name: portal_run_id
+        data_type: varchar
+      - name: ref_format
+        data_type: varchar
+      - name: reference_raw
+        data_type: varchar
+      - name: ref_uuid
+        data_type: varchar
+      - name: id_matches_reference
+        data_type: boolean
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(255)
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - spreadsheet__ica_usage_report

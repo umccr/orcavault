@@ -7,3 +7,4 @@ sources:
     tables:
       - name: spreadsheet__library_tracking_metadata
       - name: spreadsheet__google_lims
+      - name: spreadsheet__ica_usage_report
