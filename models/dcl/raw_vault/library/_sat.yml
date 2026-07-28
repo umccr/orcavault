@@ -243,3 +243,153 @@ models:
         data_type: char(1)
       - name: _dms_cdc_timestamp
         data_type: timestamptz
+
+  - name: sat_library_sequencing_run_srm
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sequencing_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_sequencing_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_sequencing_run')
+                field: library_sequencing_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: orcabus_id
+        data_type: char(26)
+      - name: association_date
+        data_type: timestamptz
+      - name: status
+        data_type: varchar(255)
+      - name: sequence_id
+        data_type: char(26)
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
+
+  - name: sat_library_sequencing_run_glims
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sequencing_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_sequencing_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_sequencing_run')
+                field: library_sequencing_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: lims_timestamp
+        data_type: date
+      - name: run
+        data_type: integer
+      - name: override_cycles
+        data_type: varchar(64)
+      - name: secondary_analysis
+        data_type: varchar(64)
+      - name: number_fastqs
+        data_type: varchar(8)
+      - name: fastq
+        data_type: varchar(255)
+      - name: results
+        data_type: varchar(255)
+      - name: notes
+        data_type: varchar(512)
+      - name: trello
+        data_type: varchar(255)
+
+  - name: sat_library_sequencing_run_plims
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sequencing_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_sequencing_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_sequencing_run')
+                field: library_sequencing_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: lims_timestamp
+        data_type: date
+      - name: run
+        data_type: integer
+      - name: override_cycles
+        data_type: varchar(64)
+      - name: secondary_analysis
+        data_type: varchar(64)
+      - name: number_fastqs
+        data_type: varchar(8)
+      - name: fastq
+        data_type: varchar(255)
+      - name: results
+        data_type: varchar(255)
+      - name: notes
+        data_type: varchar(512)
+      - name: trello
+        data_type: varchar(255)
