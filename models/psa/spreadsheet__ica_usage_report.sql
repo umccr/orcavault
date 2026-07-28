@@ -206,7 +206,12 @@ transformed as (
         ref_format,
         reference_raw,
         ref_uuid,
-        cast(id_matches_reference as boolean) as id_matches_reference,
+        -- Redshift does not support casting TEXT/VARCHAR directly to BOOLEAN.
+        case
+            when id_matches_reference is null then null
+            when id_matches_reference = 'true' then true
+            when id_matches_reference = 'false' then false
+        end as id_matches_reference,
         cast('{{ run_started_at }}' as timestamptz) as load_datetime,
         cast('spreadsheet__ica_usage_report' as varchar(255)) as record_source
     from
