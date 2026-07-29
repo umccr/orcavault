@@ -138,12 +138,11 @@ hashed as (
 
     select
         *,
-        -- Keep the legacy delimiter-free business-key contract.
         cast(
-            sha2(
-                coalesce(usage_id, '') || coalesce(billing_date, ''),
-                256
-            ) as char(64)
+            {{ generate_hash_diff([
+                'usage_id',
+                'billing_date'
+            ]) }} as char(64)
         ) as usage_hash
     from
         non_empty

@@ -132,7 +132,7 @@ models:
       - name: usage_id
         data_type: varchar
       - name: usage_hash
-        description: Legacy-compatible SHA-256 hash of the cleaned usage ID and billing date.
+        description: SHA-256 hash derived from the independently hashed, cleaned usage ID and billing date.
         data_type: char(64)
         data_tests:
           - not_null
