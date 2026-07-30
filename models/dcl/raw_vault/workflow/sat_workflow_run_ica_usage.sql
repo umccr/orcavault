@@ -27,7 +27,7 @@ with source as (
         usage_timestamp,
         region,
         ica_execution_id,
-        case when license is null then false else true end as is_license_cost,
+        case when nullif(license, '') is null then false else true end as is_license_cost,
         id_matches_reference,
         max(nullif(portal_run_id, '')) over (
             partition by ica_execution_id
@@ -42,6 +42,23 @@ with source as (
         where existing.usage_hash = usage.usage_hash
     )
     {% endif %}
+
+),
+
+hash_ready as (
+
+    select
+        *,
+        case
+            when is_license_cost then 'true'
+            else 'false'
+        end as is_license_cost_hash,
+        case
+            when id_matches_reference is null then null
+            when id_matches_reference then 'true'
+            else 'false'
+        end as id_matches_reference_hash
+    from source
 
 ),
 
@@ -68,8 +85,8 @@ transformed as (
             'usage_timestamp',
             'region',
             'ica_execution_id',
-            'is_license_cost',
-            'id_matches_reference',
+            'is_license_cost_hash',
+            'id_matches_reference_hash',
             'billing_date'
         ]) }}                                         as hash_diff,
         usage_id,
@@ -91,7 +108,7 @@ transformed as (
         is_license_cost,
         id_matches_reference,
         billing_date
-    from source
+    from hash_ready
     where resolved_run_id is not null
       and usage_context not in ('development', 'staging')
 
@@ -117,12 +134,12 @@ final as (
         cast(cost                  as numeric(25, 20)) as cost,
         cast(cost_unit             as varchar(255))    as cost_unit,
         cast(category              as varchar(255))    as category,
-        cast(usage_timestamp       as timestamptz)     as usage_timestamp,
+        cast(usage_timestamp       as date)            as usage_timestamp,
         cast(region                as varchar(255))    as region,
         cast(ica_execution_id      as varchar(255))    as ica_execution_id,
         cast(is_license_cost       as boolean)         as is_license_cost,
         cast(id_matches_reference  as boolean)         as id_matches_reference,
-        cast(billing_date          as timestamptz)     as billing_date
+        cast(billing_date          as date)            as billing_date
     from transformed
 
 )

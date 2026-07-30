@@ -293,7 +293,7 @@ models:
       - name: category
         data_type: varchar(255)
       - name: usage_timestamp
-        data_type: timestamptz
+        data_type: date
       - name: region
         data_type: varchar(255)
       - name: ica_execution_id
@@ -303,4 +303,4 @@ models:
       - name: id_matches_reference
         data_type: boolean
       - name: billing_date
-        data_type: timestamptz
+        data_type: date
