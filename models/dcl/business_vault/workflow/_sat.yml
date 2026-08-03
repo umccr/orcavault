@@ -1,0 +1,53 @@
+version: 2
+
+models:
+
+  - name: sat_workflow_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ workflow_run_hk ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - workflow_run_hk
+    columns:
+      - name: workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: workflow_name
+        data_type: varchar(255)
+      - name: workflow_version
+        data_type: varchar(100)
+      - name: workflow_code_version
+        data_type: varchar(100)
+      - name: workflow_validation_state
+        data_type: varchar(100)
+      - name: workflow_run_status
+        data_type: varchar(255)
+      - name: workflow_run_start
+        data_type: timestamptz
+      - name: workflow_run_end
+        data_type: timestamptz
+      - name: workflow_run_comment
+        data_type: varchar(65535)
+      - name: is_deleted
+        data_type: smallint
