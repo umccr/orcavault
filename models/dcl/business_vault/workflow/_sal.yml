@@ -9,16 +9,6 @@ models:
       - type: primary_key
         columns: [ sal_workflow_run_hk ]
         warn_unenforced: false
-      - type: foreign_key
-        columns: [ base_workflow_run_hk ]
-        to: ref('hub_workflow_run')
-        to_columns: [ workflow_run_hk ]
-        warn_unenforced: false
-      - type: foreign_key
-        columns: [ alias_workflow_run_hk ]
-        to: ref('hub_workflow_run')
-        to_columns: [ workflow_run_hk ]
-        warn_unenforced: false
     columns:
       - name: sal_workflow_run_hk
         data_type: char(64)
@@ -29,10 +19,18 @@ models:
         data_type: char(64)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
       - name: alias_workflow_run_hk
         data_type: char(64)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
       - name: load_datetime
         data_type: timestamptz
         data_tests:

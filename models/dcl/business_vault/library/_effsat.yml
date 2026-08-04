@@ -1,0 +1,304 @@
+version: 2
+
+models:
+
+  - name: effsat_library_experiment
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_experiment_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_experiment_hk
+              - load_datetime
+    columns:
+      - name: library_experiment_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_experiment')
+                field: library_experiment_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: experiment_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_internal_subject
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_internal_subject_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_internal_subject_hk
+              - load_datetime
+    columns:
+      - name: library_internal_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_internal_subject')
+                field: library_internal_subject_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: internal_subject_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_external_subject
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_external_subject_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_external_subject_hk
+              - load_datetime
+    columns:
+      - name: library_external_subject_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_external_subject')
+                field: library_external_subject_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: external_subject_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_external_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_external_sample_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_external_sample_hk
+              - load_datetime
+    columns:
+      - name: library_external_sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_external_sample')
+                field: library_external_sample_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: external_sample_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_sample
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sample_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_sample_hk
+              - load_datetime
+    columns:
+      - name: library_sample_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_sample')
+                field: library_sample_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: sample_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_project
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_project_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_project_hk
+              - load_datetime
+    columns:
+      - name: library_project_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_project')
+                field: library_project_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: project_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+
+  - name: effsat_library_ownership
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_owner_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_owner_hk
+              - load_datetime
+    columns:
+      - name: library_owner_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_ownership')
+                field: library_owner_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: owner_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
