@@ -9,16 +9,6 @@ models:
       - type: primary_key
         columns: [ sal_library_hk ]
         warn_unenforced: false
-      - type: foreign_key
-        columns: [ base_library_hk ]
-        to: ref('hub_library')
-        to_columns: [ library_hk ]
-        warn_unenforced: false
-      - type: foreign_key
-        columns: [ alias_library_hk ]
-        to: ref('hub_library')
-        to_columns: [ library_hk ]
-        warn_unenforced: false
     columns:
       - name: sal_library_hk
         data_type: char(64)
@@ -29,10 +19,18 @@ models:
         data_type: char(64)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
       - name: alias_library_hk
         data_type: char(64)
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_library')
+                field: library_hk
       - name: load_datetime
         data_type: timestamptz
         data_tests:
