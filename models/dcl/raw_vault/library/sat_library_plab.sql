@@ -74,22 +74,6 @@ transformed as (
 
 ),
 
-deduped as (
-
-    select *
-    from (
-        select
-            *,
-            row_number() over (
-                partition by hash_diff
-                order by library_hk
-            ) as rn
-        from transformed
-    ) t
-    where rn = 1
-
-),
-
 final as (
 
     select
@@ -104,11 +88,11 @@ final as (
         cast(quality        as varchar(255))     as quality,
         cast(source         as varchar(255))     as source,
         cast(truseqindex    as varchar(255))     as truseqindex
-    from deduped
+    from transformed
     {% if is_incremental() %}
     where not exists (
         select 1 from {{ this }} t
-        where t.hash_diff = deduped.hash_diff
+        where t.hash_diff = transformed.hash_diff
     )
     {% endif %}
 

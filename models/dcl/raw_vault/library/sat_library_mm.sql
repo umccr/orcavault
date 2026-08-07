@@ -43,6 +43,22 @@ cleaned as (
 
 ),
 
+deduped as (
+
+    select *
+    from (
+        select
+            *,
+            row_number() over (
+                partition by library_id
+                order by _dms_cdc_timestamp desc, phenotype
+            ) as rn
+        from cleaned
+    ) t
+    where rn = 1
+
+),
+
 transformed as (
 
     select
@@ -67,23 +83,7 @@ transformed as (
         quality,
         op,
         _dms_cdc_timestamp
-    from cleaned
-
-),
-
-deduped as (
-
-    select *
-    from (
-        select
-            *,
-            row_number() over (
-                partition by hash_diff
-                order by library_hk
-            ) as rn
-        from transformed
-    ) t
-    where rn = 1
+    from deduped
 
 ),
 
@@ -102,11 +102,11 @@ final as (
         cast(quality            as varchar(255))     as quality,
         cast(op                 as char(1))          as op,
         cast(_dms_cdc_timestamp as timestamptz)      as _dms_cdc_timestamp
-    from deduped
+    from transformed
     {% if is_incremental() %}
     where not exists (
         select 1 from {{ this }} t
-        where t.hash_diff = deduped.hash_diff
+        where t.hash_diff = transformed.hash_diff
     )
     {% endif %}
 

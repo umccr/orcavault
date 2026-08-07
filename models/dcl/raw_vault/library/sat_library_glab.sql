@@ -12,6 +12,7 @@ with source as (
 
     select distinct
         record_source,
+        load_datetime,
         library_id,
         workflow,
         phenotype,
@@ -29,19 +30,19 @@ with source as (
 
 ),
 
-cleaned as (
+deduped as (
 
-    select
-        record_source,
-        trim(regexp_replace(library_id, '[\n\r]+', ''))     as library_id,
-        trim(regexp_replace(workflow, '[\n\r]+', ''))       as workflow,
-        trim(regexp_replace(phenotype, '[\n\r]+', ''))      as phenotype,
-        trim(regexp_replace(type, '[\n\r]+', ''))           as type,
-        trim(regexp_replace(assay, '[\n\r]+', ''))          as assay,
-        trim(regexp_replace(quality, '[\n\r]+', ''))        as quality,
-        trim(regexp_replace(source, '[\n\r]+', ''))         as source,
-        trim(regexp_replace(truseq_index, '[\n\r]+', ''))   as truseq_index
-    from source
+    select *
+    from (
+        select
+            *,
+            row_number() over (
+                partition by library_id
+                order by load_datetime desc, phenotype
+            ) as rn
+        from source
+    ) t
+    where rn = 1
 
 ),
 
@@ -67,23 +68,7 @@ transformed as (
         quality,
         source,
         truseq_index
-    from cleaned
-
-),
-
-deduped as (
-
-    select *
-    from (
-        select
-            *,
-            row_number() over (
-                partition by hash_diff
-                order by library_hk
-            ) as rn
-        from transformed
-    ) t
-    where rn = 1
+    from deduped
 
 ),
 
@@ -101,11 +86,11 @@ final as (
         cast(quality        as varchar(255))     as quality,
         cast(source         as varchar(255))     as source,
         cast(truseq_index   as varchar(255))     as truseq_index
-    from deduped
+    from transformed
     {% if is_incremental() %}
     where not exists (
         select 1 from {{ this }} t
-        where t.hash_diff = deduped.hash_diff
+        where t.hash_diff = transformed.hash_diff
     )
     {% endif %}
 
