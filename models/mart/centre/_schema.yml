@@ -1,0 +1,6 @@
+version: 2
+
+models:
+
+  - name: lims
+    description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
