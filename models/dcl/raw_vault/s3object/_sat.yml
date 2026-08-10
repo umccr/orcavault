@@ -1,0 +1,44 @@
+version: 2
+
+models:
+
+  - name: sat_s3object_portal
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk, load_datetime ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - s3object_hk
+              - load_datetime
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_s3object')
+                field: s3object_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: id
+        data_type: bigint
+      - name: size
+        data_type: bigint
+      - name: e_tag
+        data_type: varchar(255)
+      - name: last_modified_date
+        data_type: timestamptz
