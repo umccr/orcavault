@@ -8,7 +8,69 @@
     )
 }}
 
-with source as (
+with workflow_latest as (
+
+    {# Use the latest workflow definition to scope execution IDs to ICA. #}
+
+    select
+        orcabus_id,
+        execution_engine
+    from (
+        select
+            orcabus_id,
+            execution_engine,
+            row_number() over (
+                partition by orcabus_id
+                order by _dms_cdc_timestamp desc
+            ) as rn
+        from {{ source('orcabus_workflow_manager', 'workflow_manager_workflow') }}
+    ) as ranked
+    where rn = 1
+
+),
+
+workflow_run_latest as (
+
+    {# Use the latest state of each WorkflowRun for execution-ID mapping. #}
+
+    select
+        portal_run_id,
+        execution_id,
+        workflow_id
+    from (
+        select
+            portal_run_id,
+            execution_id,
+            workflow_id,
+            row_number() over (
+                partition by orcabus_id
+                order by _dms_cdc_timestamp desc
+            ) as rn
+        from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
+    ) as ranked
+    where rn = 1
+
+),
+
+ica_execution_lookup as (
+
+    {# Only expose execution IDs that resolve to exactly one ICA workflow run. #}
+
+    select
+        nullif(trim(workflow_run.execution_id), '') as ica_execution_id,
+        max(nullif(trim(workflow_run.portal_run_id), '')) as mapped_portal_run_id
+    from workflow_run_latest as workflow_run
+        join workflow_latest as workflow
+            on workflow.orcabus_id = workflow_run.workflow_id
+    where workflow.execution_engine = 'ICA'
+      and nullif(trim(workflow_run.execution_id), '') is not null
+      and nullif(trim(workflow_run.portal_run_id), '') is not null
+    group by nullif(trim(workflow_run.execution_id), '')
+    having count(distinct nullif(trim(workflow_run.portal_run_id), '')) = 1
+
+),
+
+source as (
 
     select
         usage_id,
@@ -26,12 +88,10 @@ with source as (
         category,
         usage_timestamp,
         region,
-        ica_execution_id,
+        nullif(ica_execution_id, '') as ica_execution_id,
         case when nullif(license, '') is null then false else true end as is_license_cost,
         id_matches_reference,
-        max(nullif(portal_run_id, '')) over (
-            partition by ica_execution_id
-        ) as resolved_run_id,
+        nullif(portal_run_id, '') as portal_run_id,
         billing_date,
         record_source
     from {{ ref('spreadsheet__ica_usage_report') }} as usage
@@ -42,6 +102,29 @@ with source as (
         where existing.usage_hash = usage.usage_hash
     )
     {% endif %}
+
+),
+
+mapped as (
+
+    {#
+      Any non-empty PRID is authoritative and used directly.
+      When PRID is absent, use the unique ICA WorkflowRun execution-ID match.
+      With neither identifier, or without a unique ICA match, leave unresolved.
+    #}
+
+    select
+        usage.*,
+        case
+            when usage.portal_run_id is not null
+                then usage.portal_run_id
+            when usage.ica_execution_id is not null
+                then execution_lookup.mapped_portal_run_id
+            else null
+        end as resolved_run_id
+    from source as usage
+        left join ica_execution_lookup as execution_lookup
+            on execution_lookup.ica_execution_id = usage.ica_execution_id
 
 ),
 
@@ -58,7 +141,7 @@ hash_ready as (
             when id_matches_reference then 'true'
             else 'false'
         end as id_matches_reference_hash
-    from source
+    from mapped
 
 ),
 
