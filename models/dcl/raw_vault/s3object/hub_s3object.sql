@@ -79,12 +79,12 @@ cleaned as (
 transformed as (
 
     select
-        sha2('s3://' || bucket || '/' || "key", 256) as s3object_hk,
+        {{ generate_s3object_hk('bucket', '"key"') }} as s3object_hk,
         bucket,
         "key",
-        cast('{{ run_started_at }}' as timestamptz) as load_datetime,
+        cast('{{ run_started_at }}' as timestamptz)   as load_datetime,
         record_source,
-        cast('{{ run_started_at }}' as timestamptz) as last_seen_datetime
+        cast('{{ run_started_at }}' as timestamptz)   as last_seen_datetime
     from cleaned
 
 ),

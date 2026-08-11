@@ -27,6 +27,7 @@ with source as (
         assay,
         quality,
         source,
+        illumina_id,
         record_source
     from {{ ref('spreadsheet__google_lims') }}
     where library_id is not null
@@ -34,19 +35,19 @@ with source as (
 
 ),
 
-cleaned as (
+deduped as (
 
-    select
-        trim(regexp_replace(library_id, '[\n\r]+', ''))     as library_id,
-        lims_timestamp,
-        trim(regexp_replace(workflow, '[\n\r]+', ''))       as workflow,
-        trim(regexp_replace(phenotype, '[\n\r]+', ''))      as phenotype,
-        trim(regexp_replace(type, '[\n\r]+', ''))           as type,
-        trim(regexp_replace(assay, '[\n\r]+', ''))          as assay,
-        trim(regexp_replace(quality, '[\n\r]+', ''))        as quality,
-        trim(regexp_replace(source, '[\n\r]+', ''))         as source,
-        record_source
-    from source
+    select *
+    from (
+        select
+            *,
+            row_number() over (
+                partition by library_id, lims_timestamp
+                order by lims_timestamp desc, illumina_id desc, workflow desc
+            ) as rn
+        from source
+    ) t
+    where rn = 1
 
 ),
 
@@ -72,23 +73,7 @@ transformed as (
         assay,
         quality,
         source
-    from cleaned
-
-),
-
-deduped as (
-
-    select *
-    from (
-        select
-            *,
-            row_number() over (
-                partition by hash_diff
-                order by library_hk
-            ) as rn
-        from transformed
-    ) t
-    where rn = 1
+    from deduped
 
 ),
 
@@ -106,11 +91,11 @@ final as (
         cast(assay          as varchar(255))     as assay,
         cast(quality        as varchar(255))     as quality,
         cast(source         as varchar(255))     as source
-    from deduped
+    from transformed
     {% if is_incremental() %}
     where not exists (
         select 1 from {{ this }} t
-        where t.hash_diff = deduped.hash_diff
+        where t.hash_diff = transformed.hash_diff
     )
     {% endif %}
 

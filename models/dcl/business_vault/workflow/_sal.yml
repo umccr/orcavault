@@ -1,0 +1,43 @@
+version: 2
+
+models:
+
+  - name: sal_workflow_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ sal_workflow_run_hk ]
+        warn_unenforced: false
+    columns:
+      - name: sal_workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - unique
+      - name: base_workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: alias_workflow_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_workflow_run')
+                field: workflow_run_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: base_portal_run_id
+        data_type: char(16)
+      - name: alias_portal_run_id
+        data_type: char(16)
