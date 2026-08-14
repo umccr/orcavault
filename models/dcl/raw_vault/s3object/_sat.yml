@@ -42,3 +42,83 @@ models:
         data_type: varchar(255)
       - name: last_modified_date
         data_type: timestamptz
+
+  - name: sat_s3object_fm
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - s3object_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_s3object')
+                field: s3object_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: s3_object_id
+        data_type: varchar(36)
+      - name: event_type
+        data_type: varchar(255)
+      - name: version_id
+        data_type: varchar(255)
+      - name: event_time
+        data_type: timestamptz
+      - name: size
+        data_type: bigint
+      - name: sha256
+        data_type: varchar(255)
+      - name: last_modified_date
+        data_type: timestamptz
+      - name: e_tag
+        data_type: varchar(255)
+      - name: storage_class
+        data_type: varchar(255)
+      - name: sequencer
+        data_type: varchar(255)
+      - name: is_delete_marker
+        data_type: boolean
+      - name: number_duplicate_events
+        data_type: bigint
+      - name: attributes
+        data_type: varchar(1024)
+      - name: deleted_date
+        data_type: timestamptz
+      - name: deleted_sequencer
+        data_type: varchar(255)
+      - name: number_reordered
+        data_type: bigint
+      - name: ingest_id
+        data_type: varchar(36)
+      - name: is_current_state
+        data_type: boolean
+      - name: reason
+        data_type: varchar(255)
+      - name: archive_status
+        data_type: varchar(255)
+      - name: is_accessible
+        data_type: boolean
+      - name: op
+        data_type: char(1)
+      - name: _dms_cdc_timestamp
+        data_type: timestamptz
