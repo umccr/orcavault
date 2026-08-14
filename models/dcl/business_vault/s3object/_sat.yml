@@ -1,0 +1,67 @@
+version: 2
+
+models:
+
+  - name: sat_s3object_fm_current
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - s3object_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_s3object')
+                field: s3object_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: s3_object_id
+        data_type: varchar(36)
+      - name: size
+        data_type: bigint
+      - name: e_tag
+        data_type: varchar(255)
+      - name: sha256
+        data_type: varchar(255)
+      - name: last_modified_date
+        data_type: timestamptz
+      - name: storage_class
+        data_type: varchar(255)
+      - name: attributes
+        data_type: varchar(1024)
+      - name: ingest_id
+        data_type: varchar(36)
+      - name: reason
+        data_type: varchar(255)
+      - name: version_id
+        data_type: varchar(255)
+      - name: version_active
+        data_type: smallint
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint
+      - name: is_deleted
+        data_type: smallint
