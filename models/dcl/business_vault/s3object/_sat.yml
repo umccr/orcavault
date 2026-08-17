@@ -65,3 +65,99 @@ models:
         data_type: smallint
       - name: is_deleted
         data_type: smallint
+
+  - name: sat_s3object_by_library
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - s3object_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_s3object')
+                field: s3object_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+        data_tests:
+          - not_null
+      - name: filename
+        data_type: varchar(1024)
+      - name: ext1
+        data_type: varchar(255)
+      - name: ext2
+        data_type: varchar(255)
+      - name: ext3
+        data_type: varchar(255)
+      - name: ext4
+        data_type: varchar(255)
+
+  - name: sat_s3object_by_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ s3object_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - s3object_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: s3object_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hub_s3object')
+                field: s3object_hk
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: portal_run_id
+        data_type: char(16)
+      - name: sequencing_run_id
+        data_type: varchar(255)
+      - name: filename
+        data_type: varchar(1024)
+      - name: ext1
+        data_type: varchar(255)
+      - name: ext2
+        data_type: varchar(255)
+      - name: ext3
+        data_type: varchar(255)
+      - name: ext4
+        data_type: varchar(255)
