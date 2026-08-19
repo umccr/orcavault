@@ -1,7 +1,9 @@
 {#
     Use Case:
-    The intent is to do data mining the well-known library_id pattern from analysis data output path.
+    The intent is to do data mining the well-known library_id pattern from _analysis_ data output path.
     It return single match or NULL otherwise.
+
+    ID namespace scope specifically only to the Centre _internal_ patterns.
 #}
 
 {% macro extract_library_id(column_name) %}
