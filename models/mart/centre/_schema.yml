@@ -5,5 +5,14 @@ models:
   - name: lims
     description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
 
+  - name: fastq
+    description: Listing of the Centre genomic sequencing unaligned read level file FASTQ S3 locations in flat table model
+
+  - name: bam
+    description: Listing of the Centre genomic sequencing aligned read level file BAM and BAI S3 locations in flat table model
+
   - name: workflow
     description: Listing of the Centre genomic sequencing analysis workflow run details in flat table model
+
+  - name: workflow_output
+    description: Listing of the Centre genomic sequencing analysis workflow run output location in flat table model

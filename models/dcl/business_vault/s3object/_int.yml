@@ -1,0 +1,35 @@
+# Guide:
+#
+# The `intermediate` models are a type of lookup table or reference table that you would need to use across multiple
+# downstream layer models such as data mart tables implementation. These are types of business query-assist tables.
+# Typically, some aggregated values that you do not want to re-compute (aggregate, sum, group by, etc.) repeatedly.
+# They are used to provide a pre-computed, aggregated view of data that can be referenced by multiple downstream models.
+# They should typically be _simple_ implementations.
+#
+# Example: int_bucket_fm -> use case of aggregated distinct S3 buckets indexed by the filemanager (fm) source.
+#
+# Convention: prefix with `int_` and suffix with the source name.
+#
+# Concept: https://docs.getdbt.com/best-practices/how-we-structure/3-intermediate?version=2
+#
+# Please discuss with Victor if any doubts or more detail guideline around intermediate models. Please KISS & DoDi.
+# ~victor
+
+version: 2
+
+models:
+
+  - name: int_bucket_fm
+    description: >
+      Intermediate lookup table of distinct S3 buckets indexed by the filemanager (fm) source.
+      Derived from hub_s3object record_source — no satellite join required.
+      Used across mart models to determine FM coverage — buckets present here are served by fm,
+      buckets absent fall back to the other sources.
+    config:
+      contract: { enforced: true }
+    columns:
+      - name: bucket
+        data_type: varchar(63)
+        data_tests:
+          - not_null
+          - unique
