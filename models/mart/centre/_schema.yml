@@ -1,7 +1,6 @@
 version: 2
 
 models:
-
   - name: lims
     description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
 
@@ -16,3 +15,55 @@ models:
 
   - name: workflow_output
     description: Listing of the Centre genomic sequencing analysis workflow run output location in flat table model
+
+  - name: workflow_cost_report
+    description: >-
+      ICA usage costs for Centre genomic sequencing analysis workflows,
+      aggregated by portal run, ICA project, and cost unit. Rare non-project
+      usage is retained with a null ICA project, and rare missing cost units
+      are retained in a separate null cost-unit group.
+    config:
+      contract: { enforced: true }
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - portal_run_id
+              - ica_project
+              - cost_unit
+    columns:
+      - name: portal_run_id
+        description: Unique identifier for the workflow run in the data portal.
+        data_type: char(16)
+        data_tests:
+          - not_null
+      - name: workflow_name
+        description: Name of the workflow definition used for the run.
+        data_type: varchar(255)
+      - name: workflow_version
+        description: Version of the workflow definition used for the run.
+        data_type: varchar(255)
+      - name: workflow_status
+        description: Latest workflow run status, normalized to uppercase.
+        data_type: varchar(255)
+      - name: total_cost
+        description: Total ICA usage cost for the workflow, project, and cost-unit group.
+        data_type: numeric(18,2)
+        data_tests:
+          - not_null
+      - name: compute_cost
+        description: >-
+          Non-license ICA compute cost for the workflow, project, and cost-unit
+          group; null when no matching usage exists.
+        data_type: numeric(18,2)
+      - name: license_cost
+        description: >-
+          ICA license cost for the workflow, project, and cost-unit group; null
+          when no matching usage exists.
+        data_type: numeric(18,2)
+      - name: ica_project
+        description: ICA project associated with the usage; null for rare non-project usage.
+        data_type: varchar(255)
+      - name: cost_unit
+        description: ICA billing unit, currently iCredits; null or future units remain separate aggregation groups.
+        data_type: varchar(255)
