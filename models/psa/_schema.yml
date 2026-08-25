@@ -136,6 +136,7 @@ models:
         data_type: char(64)
         data_tests:
           - not_null
+          - unique
       - name: uc_name
         data_type: varchar
       - name: billable_account_id
