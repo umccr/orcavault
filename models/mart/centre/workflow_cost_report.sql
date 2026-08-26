@@ -25,9 +25,13 @@ cost as (
 
     {#
       ICA usage is normally associated with a project and billed in iCredits.
-      Rare non-project usage is retained in an ica_project is null bucket, and
+      Rare non-project usage is retained in an`ica_project is null` bucket, and
       cost_unit remains in the aggregation grain so null or future units are
       reported separately instead of being combined into an invalid total.
+
+      Category totals are zero only when no usage rows match the category.
+      When matching rows exist but all their costs are null, retain null to
+      expose the unknown source cost instead of reporting it as free usage.
     #}
 
     select
@@ -38,18 +42,34 @@ cost as (
         end as ica_project,
         ica.cost_unit as cost_unit,
         sum(ica.cost) as total_cost,
-        sum(
-            case
-                when ica.is_license_cost = false and ica.category = 'Compute'
-                    then ica.cost
-            end
-        ) as compute_cost,
-        sum(
-            case
-                when ica.is_license_cost = true
-                    then ica.cost
-            end
-        ) as license_cost
+        case
+            when count(
+                case
+                    when ica.is_license_cost = false and ica.category = 'Compute'
+                        then 1
+                end
+            ) = 0 then 0
+            else sum(
+                case
+                    when ica.is_license_cost = false and ica.category = 'Compute'
+                        then ica.cost
+                end
+            )
+        end as compute_cost,
+        case
+            when count(
+                case
+                    when ica.is_license_cost = true
+                        then 1
+                end
+            ) = 0 then 0
+            else sum(
+                case
+                    when ica.is_license_cost = true
+                        then ica.cost
+                end
+            )
+        end as license_cost
     from {{ ref('sat_workflow_run_ica_usage') }} ica
     group by
         ica.workflow_run_hk,
