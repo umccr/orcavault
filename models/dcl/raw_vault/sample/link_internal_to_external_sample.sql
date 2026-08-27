@@ -71,7 +71,7 @@ cdc_source as (
         sample_id,
         trim(external_sample_id)                    as external_sample_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_sample') }}
+    from {{ ref('int_cdc_mm_sample') }}
     {% if is_incremental() %}
     where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
     {% endif %}

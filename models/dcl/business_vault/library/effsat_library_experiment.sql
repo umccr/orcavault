@@ -20,15 +20,13 @@ with incremental as (
 
 ),
 
-history as (
+psa_source as (
 
-    select
-        sha2(psa.library_id::varchar, 256)                  as library_hk,
-        sha2(psa.experiment_id::varchar, 256)               as experiment_hk,
+    select distinct
         psa.library_id                                      as library_id,
         psa.experiment_id                                   as experiment_id,
-        min(psa.load_datetime)                              as association_date,
-        max(psa.record_source)                              as record_source
+        cast(psa.load_datetime as timestamptz)              as association_date,
+        psa.record_source                                   as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }} psa
     inner join incremental i
         on i.library_hk = sha2(psa.library_id::varchar, 256)
@@ -36,38 +34,42 @@ history as (
       and psa.library_id <> ''
       and psa.experiment_id is not null
       and psa.experiment_id <> ''
-    group by
-        psa.library_id,
-        psa.experiment_id
 
 ),
 
 ranked as (
 
     select
-        *,
+        sha2(library_id::varchar, 256)                      as library_hk,
+        sha2(experiment_id::varchar, 256)                   as experiment_hk,
+        library_id,
+        experiment_id,
+        association_date,
+        record_source,
         row_number() over (
             partition by library_id
             order by association_date desc
         )                                                   as rank
-    from history
+    from psa_source
 
 ),
 
 transformed as (
 
     select
-        {{ generate_hash_diff(['experiment_hk', 'library_hk']) }}
-                                                            as library_experiment_hk,
-        cast('{{ run_started_at }}' as timestamptz)         as load_datetime,
+        cast({{ generate_hash_diff(['experiment_hk', 'library_hk']) }}
+                                                as char(64))    as library_experiment_hk,
+        cast('{{ run_started_at }}' as timestamptz)             as load_datetime,
         record_source,
         {{ generate_hash_diff([
             'library_id',
-            'experiment_id'
-        ]) }}                                               as hash_diff,
+            'experiment_id',
+            'record_source',
+            'association_date'
+        ]) }}                                                   as hash_diff,
         library_id,
         experiment_id,
-        cast(association_date as timestamptz)               as effective_from,
+        cast(association_date as timestamptz)                   as effective_from,
         case
             when rank = 1
                 then cast('9999-12-31 00:00:00' as timestamptz)
@@ -76,8 +78,8 @@ transformed as (
                     partition by library_id
                     order by rank
                 )
-        end                                                 as effective_to,
-        case when rank = 1 then 1 else 0 end                as is_current
+        end                                                     as effective_to,
+        case when rank = 1 then 1 else 0 end                    as is_current
     from ranked
 
 ),

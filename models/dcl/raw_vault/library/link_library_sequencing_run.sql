@@ -56,14 +56,12 @@ with cdc_source as (
 {% endif %}
 
     select distinct
-        assoc.library_id,
-        seq.instrument_run_id                       as sequencing_run_id,
+        library_id,
+        sequencing_run_id,
         'orcabus_sequence_run_manager'              as record_source
-    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }} assoc
-        join {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }} seq
-            on seq.orcabus_id = assoc.sequence_id
+    from {{ ref('int_cdc_srm_libraryassociation_sequence') }}
     {% if is_incremental() %}
-    where assoc._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

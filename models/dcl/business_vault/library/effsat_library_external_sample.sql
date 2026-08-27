@@ -25,35 +25,22 @@ with incremental as (
 
 ),
 
-cdc_library as (
+cdc_source as (
 
     select
-        lib.library_id,
-        lib.sample_orcabus_id,
-        lib._dms_cdc_timestamp
-    from {{ source('orcabus_metadata_manager', 'app_library') }} lib
+        library_id,
+        external_sample_id,
+        association_date,
+        record_source
+    from {{ ref('int_cdc_mm_historicallibrary_historicalsample') }}
     inner join incremental i
-        on i.library_hk = sha2(lib.library_id::varchar, 256)
-    {% if is_incremental() %}
-    where lib._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
-    {% endif %}
+        on i.library_hk = sha2(library_id::varchar, 256)
 
 ),
 
-history as (
+psa_source as (
 
-    select
-        lib.library_id                                  as library_id,
-        smp.external_sample_id                          as external_sample_id,
-        cast(lib._dms_cdc_timestamp as timestamptz)     as association_date,
-        'orcabus_metadata_manager'                      as record_source
-    from cdc_library lib
-        join {{ source('orcabus_metadata_manager', 'app_sample') }} smp
-            on smp.orcabus_id = lib.sample_orcabus_id
-
-    union all
-
-    select
+    select distinct
         psa.library_id                                  as library_id,
         psa.external_sample_id                          as external_sample_id,
         cast(psa.load_datetime as timestamptz)          as association_date,
@@ -67,9 +54,9 @@ history as (
       and psa.external_sample_id <> ''
 
     {% if var('load_legacy', false) %}
-    union all
+    union
 
-    select
+    select distinct
         gg.library_id                                   as library_id,
         gg.external_sample_id                           as external_sample_id,
         cast(gg.load_datetime as timestamptz)           as association_date,
@@ -85,52 +72,60 @@ history as (
 
 ),
 
-deduped as (
+cdc_source_filtered as (
 
-    select
-        sha2(library_id::varchar, 256)                  as library_hk,
-        sha2(external_sample_id::varchar, 256)          as external_sample_hk,
-        library_id,
-        external_sample_id,
-        min(association_date)                           as association_date,
-        max(record_source)                              as record_source
-    from history
-    where library_id is not null
-      and library_id <> ''
-      and external_sample_id is not null
-      and external_sample_id <> ''
-    group by
-        library_id,
-        external_sample_id
+    {# Business rule: #}
+    {# When both sources contain a library, takes spreadsheet as the exclusive source for the library relationship #}
+
+    select * from cdc_source
+    where not exists (
+        select 1 from psa_source sp
+        where sp.library_id = cdc_source.library_id
+    )
+
+),
+
+history as (
+
+    select * from cdc_source_filtered
+    union all
+    select * from psa_source
 
 ),
 
 ranked as (
 
     select
-        *,
+        sha2(library_id::varchar, 256)                  as library_hk,
+        sha2(external_sample_id::varchar, 256)          as external_sample_hk,
+        library_id,
+        external_sample_id,
+        association_date,
+        record_source,
         row_number() over (
             partition by library_id
             order by association_date desc
         )                                               as rank
-    from deduped
+    from history
 
 ),
 
 transformed as (
 
     select
-        {{ generate_hash_diff(['external_sample_hk', 'library_hk']) }}
-                                                        as library_external_sample_hk,
-        cast('{{ run_started_at }}' as timestamptz)     as load_datetime,
+        cast({{ generate_hash_diff(['external_sample_hk', 'library_hk']) }}
+                                                as char(64))    as library_external_sample_hk,
+        cast('{{ run_started_at }}' as timestamptz)             as load_datetime,
         record_source,
         {{ generate_hash_diff([
             'library_id',
-            'external_sample_id'
-        ]) }}                                           as hash_diff,
+            'external_sample_id',
+            'record_source',
+            'association_date'
+        ]) }}                                                   as hash_diff,
         library_id,
         external_sample_id,
-        cast(association_date as timestamptz)           as effective_from,
+        cast(association_date as timestamptz)                   as effective_from,
         case
             when rank = 1
                 then cast('9999-12-31 00:00:00' as timestamptz)
@@ -139,8 +134,8 @@ transformed as (
                     partition by library_id
                     order by rank
                 )
-        end                                             as effective_to,
-        case when rank = 1 then 1 else 0 end            as is_current
+        end                                                     as effective_to,
+        case when rank = 1 then 1 else 0 end                    as is_current
     from ranked
 
 ),

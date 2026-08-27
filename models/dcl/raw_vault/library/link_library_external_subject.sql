@@ -69,14 +69,12 @@ with spreadsheet_source as (
 cdc_source as (
 
     select distinct
-        lib.library_id,
-        trim(sbj.subject_id)                        as external_subject_id,
+        library_id,
+        trim(external_subject_id)                   as external_subject_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_library') }} lib
-        join {{ source('orcabus_metadata_manager', 'app_subject') }} sbj
-            on sbj.orcabus_id = lib.subject_orcabus_id
+    from {{ ref('int_cdc_mm_library_subject') }}
     {% if is_incremental() %}
-    where lib._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

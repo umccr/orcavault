@@ -7,7 +7,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_experiment_hk, load_datetime ]
+        columns: [ library_experiment_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -15,6 +15,7 @@ models:
             combination_of_columns:
               - library_experiment_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_experiment_hk
         data_type: char(64)
@@ -50,7 +51,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_internal_subject_hk, load_datetime ]
+        columns: [ library_internal_subject_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -58,6 +59,7 @@ models:
             combination_of_columns:
               - library_internal_subject_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_internal_subject_hk
         data_type: char(64)
@@ -93,7 +95,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_external_subject_hk, load_datetime ]
+        columns: [ library_external_subject_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -101,6 +103,7 @@ models:
             combination_of_columns:
               - library_external_subject_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_external_subject_hk
         data_type: char(64)
@@ -136,7 +139,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_external_sample_hk, load_datetime ]
+        columns: [ library_external_sample_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -144,6 +147,7 @@ models:
             combination_of_columns:
               - library_external_sample_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_external_sample_hk
         data_type: char(64)
@@ -179,7 +183,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_sample_hk, load_datetime ]
+        columns: [ library_sample_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -187,6 +191,7 @@ models:
             combination_of_columns:
               - library_sample_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_sample_hk
         data_type: char(64)
@@ -222,7 +227,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_project_hk, load_datetime ]
+        columns: [ library_project_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -230,6 +235,7 @@ models:
             combination_of_columns:
               - library_project_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_project_hk
         data_type: char(64)
@@ -265,7 +271,7 @@ models:
       contract: { enforced: true }
     constraints:
       - type: primary_key
-        columns: [ library_owner_hk, load_datetime ]
+        columns: [ library_owner_hk, load_datetime, hash_diff ]
         warn_unenforced: false
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -273,6 +279,7 @@ models:
             combination_of_columns:
               - library_owner_hk
               - load_datetime
+              - hash_diff
     columns:
       - name: library_owner_hk
         data_type: char(64)

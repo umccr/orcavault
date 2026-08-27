@@ -60,16 +60,12 @@ with cdc_source as (
 {% endif %}
 
     select distinct
-        wfr.portal_run_id,
-        lib.library_id,
+        portal_run_id,
+        library_id,
         'orcabus_workflow_manager'                  as record_source
-    from {{ source('orcabus_workflow_manager', 'workflow_manager_libraryassociation') }} lnk
-        join {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }} wfr
-            on wfr.orcabus_id = lnk.workflow_run_id
-        join {{ source('orcabus_workflow_manager', 'workflow_manager_library') }} lib
-            on lib.orcabus_id = lnk.library_id
+    from {{ ref('int_cdc_wfm_libraryassociation_workflowrun') }}
     {% if is_incremental() %}
-    where lnk._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),
