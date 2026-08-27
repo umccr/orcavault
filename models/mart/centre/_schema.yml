@@ -1,7 +1,6 @@
 version: 2
 
 models:
-
   - name: lims
     description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
 
@@ -16,3 +15,6 @@ models:
 
   - name: workflow_output
     description: Listing of the Centre genomic sequencing analysis workflow run output location in flat table model
+
+  - name: workflow_cost_report
+    description: Listing of the Centre genomic sequencing analysis workflow run ICA costs by ICA project in flat table model
