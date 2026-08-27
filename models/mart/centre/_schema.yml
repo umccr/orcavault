@@ -10,6 +10,9 @@ models:
   - name: bam
     description: Listing of the Centre genomic sequencing aligned read level file BAM and BAI S3 locations in flat table model
 
+  - name: vcf
+    description: Listing of the Centre genomic sequencing variant call file VCF and TBI S3 locations in flat table model
+
   - name: workflow
     description: Listing of the Centre genomic sequencing analysis workflow run details in flat table model
 
