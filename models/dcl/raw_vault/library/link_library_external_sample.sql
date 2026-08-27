@@ -69,14 +69,12 @@ with spreadsheet_source as (
 cdc_source as (
 
     select distinct
-        lib.library_id,
-        trim(smp.external_sample_id)                as external_sample_id,
+        library_id,
+        trim(external_sample_id)                    as external_sample_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_library') }} lib
-        join {{ source('orcabus_metadata_manager', 'app_sample') }} smp
-            on smp.orcabus_id = lib.sample_orcabus_id
+    from {{ ref('int_cdc_mm_library_sample') }}
     {% if is_incremental() %}
-    where lib._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

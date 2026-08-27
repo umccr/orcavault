@@ -1,0 +1,30 @@
+# Read dbt concepts: Intermediate models and Ephemeral materializations
+#   https://docs.getdbt.com/best-practices/how-we-structure/3-intermediate?version=2
+#   https://docs.getdbt.com/docs/build/materializations?version=2#ephemeral
+#
+# Together we can create a _dynamic_ and _compile_ time CTE code excerpt that would inject into
+# the main orchestration code flow. Hence, we can create _reusable_ component or utility.
+#
+# Please discuss with Victor if any doubts or more detail guideline around intermediate models. Please KISS & DoDi.
+# ~victor
+
+version: 2
+
+models:
+
+  - name: int_cdc_mm_sample
+  - name: int_cdc_mm_library
+  - name: int_cdc_mm_subject
+  - name: int_cdc_mm_individual
+  - name: int_cdc_mm_library_sample
+  - name: int_cdc_mm_library_subject
+  - name: int_cdc_mm_historicallibrary
+  - name: int_cdc_mm_historicalsample
+  - name: int_cdc_mm_historicalsubject
+  - name: int_cdc_mm_historicallibrary_historicalsample
+  - name: int_cdc_mm_historicallibrary_historicalsubject
+  - name: int_cdc_mm_project
+  - name: int_cdc_mm_libraryprojectlink
+  - name: int_cdc_mm_library_project
+  - name: int_cdc_mm_subjectindividuallink
+  - name: int_cdc_mm_subject_individual

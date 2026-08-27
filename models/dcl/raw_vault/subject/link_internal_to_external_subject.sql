@@ -70,16 +70,12 @@ with spreadsheet_source as (
 cdc_source as (
 
     select distinct
-        idv.individual_id                           as internal_subject_id,
-        sbj.subject_id                              as external_subject_id,
+        internal_subject_id,
+        external_subject_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_subjectindividuallink') }} lnk
-        join {{ source('orcabus_metadata_manager', 'app_subject') }} sbj
-            on sbj.orcabus_id = lnk.subject_orcabus_id
-        join {{ source('orcabus_metadata_manager', 'app_individual') }} idv
-            on idv.orcabus_id = lnk.individual_orcabus_id
+    from {{ ref('int_cdc_mm_subject_individual') }}
     {% if is_incremental() %}
-    where lnk._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

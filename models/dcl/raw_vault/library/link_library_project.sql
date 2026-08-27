@@ -70,16 +70,12 @@ with spreadsheet_source as (
 cdc_source as (
 
     select distinct
-        lib.library_id,
-        prj.project_id,
+        library_id,
+        project_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_libraryprojectlink') }} lnk
-        join {{ source('orcabus_metadata_manager', 'app_library') }} lib
-            on lib.orcabus_id = lnk.library_orcabus_id
-        join {{ source('orcabus_metadata_manager', 'app_project') }} prj
-            on prj.orcabus_id = lnk.project_orcabus_id
+    from {{ ref('int_cdc_mm_library_project') }}
     {% if is_incremental() %}
-    where lnk._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where association_date > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

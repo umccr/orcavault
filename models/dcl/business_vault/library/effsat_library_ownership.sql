@@ -25,9 +25,9 @@ with incremental as (
 
 ),
 
-history as (
+psa_source as (
 
-    select
+    select distinct
         psa.library_id                                  as library_id,
         psa.project_owner                               as owner_id,
         cast(psa.load_datetime as timestamptz)          as association_date,
@@ -41,9 +41,9 @@ history as (
       and psa.project_owner <> ''
 
     {% if var('load_legacy', false) %}
-    union all
+    union
 
-    select
+    select distinct
         gg.library_id                                   as library_id,
         gg.project_owner                                as owner_id,
         cast(gg.load_datetime as timestamptz)           as association_date,
@@ -59,52 +59,39 @@ history as (
 
 ),
 
-deduped as (
+ranked as (
 
     select
         sha2(library_id::varchar, 256)                  as library_hk,
         sha2(owner_id::varchar, 256)                    as owner_hk,
         library_id,
         owner_id,
-        min(association_date)                           as association_date,
-        max(record_source)                              as record_source
-    from history
-    where library_id is not null
-      and library_id <> ''
-      and owner_id is not null
-      and owner_id <> ''
-    group by
-        library_id,
-        owner_id
-
-),
-
-ranked as (
-
-    select
-        *,
+        association_date,
+        record_source,
         row_number() over (
             partition by library_id
             order by association_date desc
         )                                               as rank
-    from deduped
+    from psa_source
 
 ),
 
 transformed as (
 
     select
-        {{ generate_hash_diff(['owner_hk', 'library_hk']) }}
-                                                        as library_owner_hk,
-        cast('{{ run_started_at }}' as timestamptz)     as load_datetime,
+        cast({{ generate_hash_diff(['owner_hk', 'library_hk']) }}
+                                                as char(64))    as library_owner_hk,
+        cast('{{ run_started_at }}' as timestamptz)             as load_datetime,
         record_source,
         {{ generate_hash_diff([
             'library_id',
-            'owner_id'
-        ]) }}                                           as hash_diff,
+            'owner_id',
+            'record_source',
+            'association_date'
+        ]) }}                                                   as hash_diff,
         library_id,
         owner_id,
-        cast(association_date as timestamptz)           as effective_from,
+        cast(association_date as timestamptz)                   as effective_from,
         case
             when rank = 1
                 then cast('9999-12-31 00:00:00' as timestamptz)
@@ -113,8 +100,8 @@ transformed as (
                     partition by library_id
                     order by rank
                 )
-        end                                             as effective_to,
-        case when rank = 1 then 1 else 0 end            as is_current
+        end                                                     as effective_to,
+        case when rank = 1 then 1 else 0 end                    as is_current
     from ranked
 
 ),

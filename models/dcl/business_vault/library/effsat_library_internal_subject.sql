@@ -25,15 +25,13 @@ with incremental as (
 
 ),
 
-history as (
+psa_source as (
 
-    select
-        sha2(psa.library_id::varchar, 256)              as library_hk,
-        sha2(psa.subject_id::varchar, 256)              as internal_subject_hk,
+    select distinct
         psa.library_id                                  as library_id,
         psa.subject_id                                  as internal_subject_id,
-        min(psa.load_datetime)                          as association_date,
-        max(psa.record_source)                          as record_source
+        cast(psa.load_datetime as timestamptz)          as association_date,
+        psa.record_source                               as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }} psa
     inner join incremental i
         on i.library_hk = sha2(psa.library_id::varchar, 256)
@@ -41,20 +39,15 @@ history as (
       and psa.library_id <> ''
       and psa.subject_id is not null
       and psa.subject_id <> ''
-    group by
-        psa.library_id,
-        psa.subject_id
 
     {% if var('load_legacy', false) %}
-    union all
+    union
 
-    select
-        sha2(gg.library_id::varchar, 256)               as library_hk,
-        sha2(gg.subject_id::varchar, 256)               as internal_subject_hk,
+    select distinct
         gg.library_id                                   as library_id,
         gg.subject_id                                   as internal_subject_id,
-        min(gg.load_datetime)                           as association_date,
-        max(gg.record_source)                           as record_source
+        cast(gg.load_datetime as timestamptz)           as association_date,
+        gg.record_source                                as record_source
     from {{ ref('spreadsheet__google_lims') }} gg
     inner join incremental i
         on i.library_hk = sha2(gg.library_id::varchar, 256)
@@ -62,9 +55,6 @@ history as (
       and gg.library_id <> ''
       and gg.subject_id is not null
       and gg.subject_id <> ''
-    group by
-        gg.library_id,
-        gg.subject_id
     {% endif %}
 
 ),
@@ -72,29 +62,36 @@ history as (
 ranked as (
 
     select
-        *,
+        sha2(library_id::varchar, 256)                  as library_hk,
+        sha2(internal_subject_id::varchar, 256)         as internal_subject_hk,
+        library_id,
+        internal_subject_id,
+        association_date,
+        record_source,
         row_number() over (
             partition by library_id
             order by association_date desc
         )                                               as rank
-    from history
+    from psa_source
 
 ),
 
 transformed as (
 
     select
-        {{ generate_hash_diff(['internal_subject_hk', 'library_hk']) }}
-                                                        as library_internal_subject_hk,
-        cast('{{ run_started_at }}' as timestamptz)     as load_datetime,
+        cast({{ generate_hash_diff(['internal_subject_hk', 'library_hk']) }}
+                                                as char(64))    as library_internal_subject_hk,
+        cast('{{ run_started_at }}' as timestamptz)             as load_datetime,
         record_source,
         {{ generate_hash_diff([
             'library_id',
-            'internal_subject_id'
-        ]) }}                                           as hash_diff,
+            'internal_subject_id',
+            'record_source',
+            'association_date'
+        ]) }}                                                   as hash_diff,
         library_id,
         internal_subject_id,
-        cast(association_date as timestamptz)           as effective_from,
+        cast(association_date as timestamptz)                   as effective_from,
         case
             when rank = 1
                 then cast('9999-12-31 00:00:00' as timestamptz)
@@ -103,8 +100,8 @@ transformed as (
                     partition by library_id
                     order by rank
                 )
-        end                                             as effective_to,
-        case when rank = 1 then 1 else 0 end            as is_current
+        end                                                     as effective_to,
+        case when rank = 1 then 1 else 0 end                    as is_current
     from ranked
 
 ),
