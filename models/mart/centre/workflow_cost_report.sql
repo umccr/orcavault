@@ -17,7 +17,9 @@ with workflow as (
     from {{ ref('hub_workflow_run') }} hub
         join {{ ref('sat_workflow_run') }} sat
             on sat.workflow_run_hk = hub.workflow_run_hk
-    where sat.is_deleted = 0
+    -- Hard deletion is not currently used, but may be introduced soon.
+    -- Retain incurred costs for failed or deleted runs regardless of status.
+    -- where sat.is_deleted = 0
 
 ),
 
