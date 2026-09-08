@@ -84,6 +84,10 @@ BUT. Doing so will lose the model's historical `load_datetime` history.
 dbt run -s hub_sequencing_run --full-refresh
 ```
 
+A few append-only models set `full_refresh: false` in their config, so `--full-refresh` is ignored for them and
+new columns are added in place with `on_schema_change: append_new_columns` instead. See
+`psa.spreadsheet__ica_usage_report` and `dcl.sat_workflow_run_ica_usage`.
+
 ## Redshift
 
 * Login to the Data Warehouse AWS account console using `AWSPowerUserAccess` role.

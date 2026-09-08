@@ -20,4 +20,7 @@ models:
     description: Listing of the Centre genomic sequencing analysis workflow run output location in flat table model
 
   - name: workflow_cost_report
-    description: Listing of the Centre genomic sequencing analysis workflow run ICA costs by ICA project in flat table model
+    description: >
+      Listing of the Centre genomic sequencing analysis workflow run ICA costs by ICA project in flat table model.
+      Costs are reported in BIC; usage billed in iCredits before the 2026-05 BioInsight Core cutover is
+      converted 1:1. cost_saved is the discount Illumina applied, so total_cost + cost_saved is the list price.

@@ -2,11 +2,24 @@
     config(
         materialized='incremental',
         incremental_strategy='append',
-        on_schema_change='fail',
+        on_schema_change='append_new_columns',
+        full_refresh=false,
         dist='workflow_run_hk',
         sort=['workflow_run_hk', 'load_datetime']
     )
 }}
+
+{#
+    Append-only pass-through of the Illumina usage rows that resolve to an ICA workflow run.
+
+    Both source layouts are carried exactly as PSA holds them (see psa.spreadsheet__ica_usage_report).
+    Legacy rows keep price_per_unit and leave the BioInsight Core columns null; BioInsight Core rows do the
+    reverse. Units stay as written (iCredits, BIC). Reconciling the two eras is a business rule and lives in
+    int_workflow_run_ica_usage, so this satellite remains a faithful record.
+
+    Schema additions are applied in place with append_new_columns and --full-refresh is ignored so the
+    load_datetime history survives. Lift full_refresh=false deliberately if a rebuild from PSA is ever wanted.
+#}
 
 with workflow_latest as (
 
@@ -75,6 +88,7 @@ source as (
     select
         usage_id,
         usage_hash,
+        row_seq,
         usage_context,
         usage_context_type,
         user_name,
@@ -82,8 +96,12 @@ source as (
         usage_type_description,
         quantity as usage_quantity,
         usage_unit,
+        pricing_method,
         price_per_unit,
+        list_rate,
+        applied_rate,
         cost,
+        cost_saved,
         cost_unit,
         category,
         usage_timestamp,
@@ -91,6 +109,8 @@ source as (
         nullif(ica_execution_id, '') as ica_execution_id,
         case when nullif(license, '') is null then false else true end as is_license_cost,
         id_matches_reference,
+        ica_v2,
+        is_in_grace_period,
         nullif(portal_run_id, '') as portal_run_id,
         billing_date,
         record_source
@@ -130,6 +150,8 @@ mapped as (
 
 hash_ready as (
 
+    {# Redshift cannot cast boolean to varchar, so booleans are spelled out before hashing. #}
+
     select
         *,
         case
@@ -140,7 +162,17 @@ hash_ready as (
             when id_matches_reference is null then null
             when id_matches_reference then 'true'
             else 'false'
-        end as id_matches_reference_hash
+        end as id_matches_reference_hash,
+        case
+            when ica_v2 is null then null
+            when ica_v2 then 'true'
+            else 'false'
+        end as ica_v2_hash,
+        case
+            when is_in_grace_period is null then null
+            when is_in_grace_period then 'true'
+            else 'false'
+        end as is_in_grace_period_hash
     from mapped
 
 ),
@@ -154,6 +186,7 @@ transformed as (
         {{ generate_hash_diff([
             'usage_id',
             'usage_hash',
+            'row_seq',
             'usage_context',
             'usage_context_type',
             'user_name',
@@ -161,8 +194,12 @@ transformed as (
             'usage_type_description',
             'usage_quantity',
             'usage_unit',
+            'pricing_method',
             'price_per_unit',
+            'list_rate',
+            'applied_rate',
             'cost',
+            'cost_saved',
             'cost_unit',
             'category',
             'usage_timestamp',
@@ -170,10 +207,13 @@ transformed as (
             'ica_execution_id',
             'is_license_cost_hash',
             'id_matches_reference_hash',
+            'ica_v2_hash',
+            'is_in_grace_period_hash',
             'billing_date'
         ]) }}                                         as hash_diff,
         usage_id,
         usage_hash,
+        row_seq,
         usage_context,
         usage_context_type,
         user_name,
@@ -181,8 +221,12 @@ transformed as (
         usage_type_description,
         usage_quantity,
         usage_unit,
+        pricing_method,
         price_per_unit,
+        list_rate,
+        applied_rate,
         cost,
+        cost_saved,
         cost_unit,
         category,
         usage_timestamp,
@@ -190,6 +234,8 @@ transformed as (
         ica_execution_id,
         is_license_cost,
         id_matches_reference,
+        ica_v2,
+        is_in_grace_period,
         billing_date
     from hash_ready
     where resolved_run_id is not null
@@ -206,6 +252,7 @@ final as (
         cast(hash_diff             as char(64))        as hash_diff,
         cast(usage_id              as varchar(255))    as usage_id,
         cast(usage_hash            as char(64))        as usage_hash,
+        cast(row_seq               as integer)         as row_seq,
         cast(usage_context         as varchar(255))    as usage_context,
         cast(usage_context_type    as varchar(255))    as usage_context_type,
         cast(user_name             as varchar(255))    as user_name,
@@ -213,8 +260,12 @@ final as (
         cast(usage_type_description as varchar(255))   as usage_type_description,
         cast(usage_quantity        as numeric(38, 20)) as usage_quantity,
         cast(usage_unit            as varchar(255))    as usage_unit,
+        cast(pricing_method        as varchar(255))    as pricing_method,
         cast(price_per_unit        as numeric(25, 20)) as price_per_unit,
+        cast(list_rate             as numeric(25, 20)) as list_rate,
+        cast(applied_rate          as numeric(25, 20)) as applied_rate,
         cast(cost                  as numeric(25, 20)) as cost,
+        cast(cost_saved            as numeric(25, 20)) as cost_saved,
         cast(cost_unit             as varchar(255))    as cost_unit,
         cast(category              as varchar(255))    as category,
         cast(usage_timestamp       as date)            as usage_timestamp,
@@ -222,6 +273,8 @@ final as (
         cast(ica_execution_id      as varchar(255))    as ica_execution_id,
         cast(is_license_cost       as boolean)         as is_license_cost,
         cast(id_matches_reference  as boolean)         as id_matches_reference,
+        cast(ica_v2                as boolean)         as ica_v2,
+        cast(is_in_grace_period    as boolean)         as is_in_grace_period,
         cast(billing_date          as date)            as billing_date
     from transformed
 

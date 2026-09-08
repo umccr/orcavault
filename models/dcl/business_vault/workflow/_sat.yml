@@ -53,6 +53,12 @@ models:
         data_type: smallint
 
   - name: sat_workflow_run_ica_usage
+    description: >
+      Append-only satellite of Illumina usage rows resolved to an ICA workflow run. Carries both the legacy
+      ICA Usage Explorer layout (2026-04 and earlier) and the BioInsight Core layout (2026-05 onwards) exactly
+      as PSA holds them; the era-specific columns are null for the other era and units stay as written.
+      Reconciliation lives in int_workflow_run_ica_usage. Schema additions are applied in place with
+      append_new_columns and --full-refresh is ignored.
     config:
       contract: { enforced: true }
     constraints:
@@ -89,10 +95,16 @@ models:
       - name: usage_id
         data_type: varchar(255)
       - name: usage_hash
+        description: >
+          Append-only dedupe key inherited from PSA, hashed from usage_id and billing_date only. row_seq is
+          not part of the grain; a row_seq > 1 upstream surfaces as a unique-test failure by design.
         data_type: char(64)
         data_tests:
           - not_null
           - unique
+      - name: row_seq
+        description: BioInsight Core only. Always 1 so far; null for legacy rows.
+        data_type: integer
       - name: usage_context
         data_type: varchar(255)
       - name: usage_context_type
@@ -106,12 +118,27 @@ models:
       - name: usage_quantity
         data_type: numeric(38,20)
       - name: usage_unit
+        description: As written by the source. iCredits before the 2026-05 cutover, BIC after (1:1 rename).
+        data_type: varchar(255)
+      - name: pricing_method
+        description: BioInsight Core only. Always Standard Rate so far; null for legacy rows.
         data_type: varchar(255)
       - name: price_per_unit
+        description: Legacy only. Renamed list_rate in the BioInsight Core layout; null from 2026-05 onwards.
+        data_type: numeric(25,20)
+      - name: list_rate
+        description: BioInsight Core only. Rate per unit before discount; null for legacy rows.
+        data_type: numeric(25,20)
+      - name: applied_rate
+        description: BioInsight Core only. Rate per unit actually charged; cost = usage_quantity * applied_rate. Null for legacy rows.
         data_type: numeric(25,20)
       - name: cost
         data_type: numeric(25,20)
+      - name: cost_saved
+        description: BioInsight Core only. usage_quantity * (list_rate - applied_rate); null for legacy rows.
+        data_type: numeric(25,20)
       - name: cost_unit
+        description: As written by the source. iCredits before the 2026-05 cutover, BIC after (1:1 rename).
         data_type: varchar(255)
       - name: category
         data_type: varchar(255)
@@ -124,6 +151,12 @@ models:
       - name: is_license_cost
         data_type: boolean
       - name: id_matches_reference
+        data_type: boolean
+      - name: ica_v2
+        description: BioInsight Core only. Parsed from storage row metadata; null otherwise.
+        data_type: boolean
+      - name: is_in_grace_period
+        description: BioInsight Core only. Parsed from storage row metadata, explains zero-cost storage rows; null otherwise.
         data_type: boolean
       - name: billing_date
         data_type: date

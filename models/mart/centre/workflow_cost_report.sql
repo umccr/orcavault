@@ -26,10 +26,18 @@ with workflow as (
 cost as (
 
     {#
-      ICA usage is normally associated with a project and billed in iCredits.
-      Rare non-project usage is retained in an`ica_project is null` bucket, and
+      ICA usage is normally associated with a project and billed in BIC.
+      int_workflow_run_ica_usage has already reconciled the two Illumina export
+      layouts and converted every amount from the unit the source wrote into
+      the reporting unit via the mdm__ica_billing_unit seed (iCredits to BIC at
+      1:1 today), so one workflow run never splits across two units.
+      Rare non-project usage is retained in an `ica_project is null` bucket, and
       cost_unit remains in the aggregation grain so null or future units are
       reported separately instead of being combined into an invalid total.
+
+      cost is the amount actually charged after discount. cost_saved is the
+      discount Illumina applied, 0 before the cutover, so total_cost + cost_saved
+      is the list price.
 
       Category totals are zero only when no usage rows match the category.
       When matching rows exist but all their costs are null, retain null to
@@ -71,8 +79,9 @@ cost as (
                         then ica.cost
                 end
             )
-        end as license_cost
-    from {{ ref('sat_workflow_run_ica_usage') }} ica
+        end as license_cost,
+        sum(ica.cost_saved) as cost_saved
+    from {{ ref('int_workflow_run_ica_usage') }} ica
     group by
         ica.workflow_run_hk,
         case
@@ -94,7 +103,8 @@ merged as (
         cost.cost_unit                     as cost_unit,
         cost.total_cost                    as total_cost,
         cost.compute_cost                  as compute_cost,
-        cost.license_cost                  as license_cost
+        cost.license_cost                  as license_cost,
+        cost.cost_saved                    as cost_saved
     from cost
         inner join workflow on cost.workflow_run_hk = workflow.workflow_run_hk
 
@@ -116,6 +126,7 @@ final as (
         cast(total_cost       as numeric(18, 2))  as total_cost,
         cast(compute_cost     as numeric(18, 2))  as compute_cost,
         cast(license_cost     as numeric(18, 2))  as license_cost,
+        cast(cost_saved       as numeric(18, 2))  as cost_saved,
         cast(ica_project      as varchar(255))    as ica_project,
         cast(cost_unit        as varchar(255))    as cost_unit
     from merged
