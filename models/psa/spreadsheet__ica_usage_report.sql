@@ -3,7 +3,7 @@
         materialized='incremental',
         incremental_strategy='append',
         on_schema_change='append_new_columns',
-        full_refresh=false
+        full_refresh=var('ica_usage_full_refresh', false)
     )
 }}
 
@@ -28,12 +28,24 @@
     the units are stored exactly as written. The two eras are reconciled downstream in
     dcl.int_workflow_run_ica_usage, never here.
 
-    The TSA table is truncated and reloaded on every Glue run, so this history cannot be rebuilt from anywhere
-    and schema changes must be applied in place:
+    Reload policy:
 
       - on_schema_change='append_new_columns' adds a new column with ALTER TABLE, leaves it null on the rows
-        already loaded and never drops a column.
-      - full_refresh=false makes dbt ignore --full-refresh for this model.
+        already loaded and never drops a column. This is what stops a Glue-side column addition from failing
+        the run, and it is the normal path for every future source change.
+      - full_refresh defaults to false, so a project-wide `dbt run --full-refresh` cannot silently discard
+        this history. Rebuild deliberately, naming the model, when that is what you mean:
+
+            dbt run -s spreadsheet__ica_usage_report --vars '{ica_usage_full_refresh: true}'
+
+      - A rebuild is lossless only while TSA still carries every source row. Glue truncates and reloads TSA
+        from all CSVs under the source prefix on each run, so that holds today. It stops holding the moment a
+        source CSV is removed from the bucket or Illumina restates a past month; from then on this table is
+        the only record and a rebuild would silently drop rows. Check before rebuilding:
+
+            select count(*) from psa.spreadsheet__ica_usage_report p
+            where not exists (select 1 from <tsa hashed> t where t.usage_hash = p.usage_hash)
+
       - Column types are near-irreversible on Redshift (ALTER COLUMN TYPE only widens varchar), so choose
         them carefully the first time.
 

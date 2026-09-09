@@ -84,9 +84,15 @@ BUT. Doing so will lose the model's historical `load_datetime` history.
 dbt run -s hub_sequencing_run --full-refresh
 ```
 
-A few append-only models set `full_refresh: false` in their config, so `--full-refresh` is ignored for them and
-new columns are added in place with `on_schema_change: append_new_columns` instead. See
-`psa.spreadsheet__ica_usage_report` and `dcl.sat_workflow_run_ica_usage`.
+The append-only ICA usage models ignore a project-wide `--full-refresh`, so a routine full refresh of the
+project cannot silently discard their load history. New columns are added in place with
+`on_schema_change: append_new_columns` instead. Rebuild them only when you mean it, naming them explicitly:
+
+```
+dbt run -s spreadsheet__ica_usage_report sat_workflow_run_ica_usage --vars '{ica_usage_full_refresh: true}'
+```
+
+This is lossless only while `tsa.spreadsheet__ica_usage_report` still carries every source row.
 
 ## Redshift
 

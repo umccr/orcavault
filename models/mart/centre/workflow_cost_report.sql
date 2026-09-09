@@ -35,9 +35,9 @@ cost as (
       cost_unit remains in the aggregation grain so null or future units are
       reported separately instead of being combined into an invalid total.
 
-      cost is the amount actually charged after discount. cost_saved is the
-      discount Illumina applied, 0 before the cutover, so total_cost + cost_saved
-      is the list price.
+      Costs are the amount actually charged. From the 2026-05 cutover Illumina
+      applies a discount, so cost is net of it; the discount itself is carried
+      in int_workflow_run_ica_usage.cost_saved for anyone who needs it.
 
       Category totals are zero only when no usage rows match the category.
       When matching rows exist but all their costs are null, retain null to
@@ -79,8 +79,7 @@ cost as (
                         then ica.cost
                 end
             )
-        end as license_cost,
-        sum(ica.cost_saved) as cost_saved
+        end as license_cost
     from {{ ref('int_workflow_run_ica_usage') }} ica
     group by
         ica.workflow_run_hk,
@@ -103,8 +102,7 @@ merged as (
         cost.cost_unit                     as cost_unit,
         cost.total_cost                    as total_cost,
         cost.compute_cost                  as compute_cost,
-        cost.license_cost                  as license_cost,
-        cost.cost_saved                    as cost_saved
+        cost.license_cost                  as license_cost
     from cost
         inner join workflow on cost.workflow_run_hk = workflow.workflow_run_hk
 
@@ -126,7 +124,6 @@ final as (
         cast(total_cost       as numeric(18, 2))  as total_cost,
         cast(compute_cost     as numeric(18, 2))  as compute_cost,
         cast(license_cost     as numeric(18, 2))  as license_cost,
-        cast(cost_saved       as numeric(18, 2))  as cost_saved,
         cast(ica_project      as varchar(255))    as ica_project,
         cast(cost_unit        as varchar(255))    as cost_unit
     from merged

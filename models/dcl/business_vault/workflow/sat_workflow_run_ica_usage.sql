@@ -3,7 +3,7 @@
         materialized='incremental',
         incremental_strategy='append',
         on_schema_change='append_new_columns',
-        full_refresh=false,
+        full_refresh=var('ica_usage_full_refresh', false),
         dist='workflow_run_hk',
         sort=['workflow_run_hk', 'load_datetime']
     )
@@ -17,8 +17,14 @@
     reverse. Units stay as written (iCredits, BIC). Reconciling the two eras is a business rule and lives in
     int_workflow_run_ica_usage, so this satellite remains a faithful record.
 
-    Schema additions are applied in place with append_new_columns and --full-refresh is ignored so the
-    load_datetime history survives. Lift full_refresh=false deliberately if a rebuild from PSA is ever wanted.
+    Schema additions are applied in place with append_new_columns. full_refresh defaults to false so a
+    project-wide `dbt run --full-refresh` cannot discard the load_datetime history. Rebuild from PSA
+    deliberately with:
+
+        dbt run -s sat_workflow_run_ica_usage --vars '{ica_usage_full_refresh: true}'
+
+    A rebuild re-resolves execution IDs against the current workflow_manager CDC state, so the resolved set
+    can legitimately differ from the one first loaded. That is usually more correct, but it is a change.
 #}
 
 with workflow_latest as (
