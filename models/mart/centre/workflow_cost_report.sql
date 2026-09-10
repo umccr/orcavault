@@ -26,14 +26,20 @@ with workflow as (
 cost as (
 
     {#
-      ICA usage is normally associated with a project and billed in iCredits.
-      Rare non-project usage is retained in an`ica_project is null` bucket, and
-      cost_unit remains in the aggregation grain so null or future units are
-      reported separately instead of being combined into an invalid total.
+      ICA usage is normally associated with a project and billed in BIC. Illumina
+      renamed iCredits to BIC 1:1 at the 2026-05 cutover, so both spellings are
+      folded here; otherwise a run spanning the cutover splits into two rows whose
+      totals cannot be added. The satellite keeps the unit as written.
 
-      Category totals are zero only when no usage rows match the category.
-      When matching rows exist but all their costs are null, retain null to
-      expose the unknown source cost instead of reporting it as free usage.
+      Rare non-project usage is retained in an `ica_project is null` bucket, and
+      cost_unit stays in the grain so null or future units report separately
+      instead of being combined into an invalid total.
+
+      Costs are net of any Illumina discount; the discount itself is in
+      sat_workflow_run_ica_usage.cost_saved.
+
+      Category totals are zero only when no usage rows match the category. When
+      rows match but all costs are null, retain null rather than reporting free usage.
     #}
 
     select
@@ -42,7 +48,7 @@ cost as (
             when ica.usage_context_type = 'Project' then ica.usage_context
             else null
         end as ica_project,
-        ica.cost_unit as cost_unit,
+        case when ica.cost_unit = 'iCredits' then 'BIC' else ica.cost_unit end as cost_unit,
         sum(ica.cost) as total_cost,
         case
             when count(
@@ -79,7 +85,7 @@ cost as (
             when ica.usage_context_type = 'Project' then ica.usage_context
             else null
         end,
-        ica.cost_unit
+        case when ica.cost_unit = 'iCredits' then 'BIC' else ica.cost_unit end
 
 ),
 
