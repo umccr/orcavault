@@ -26,23 +26,20 @@ with workflow as (
 cost as (
 
     {#
-      ICA usage is normally associated with a project and billed in BIC.
-      Illumina renamed iCredits to BIC 1:1 at the 2026-05 BioInsight Core
-      cutover, so the two spellings are folded together here. Without that, a
-      run whose usage spans the cutover splits into two rows whose totals
-      cannot be added. The satellite keeps the unit exactly as the source
-      wrote it; folding them is a reporting decision and belongs here.
+      ICA usage is normally associated with a project and billed in BIC. Illumina
+      renamed iCredits to BIC 1:1 at the 2026-05 cutover, so both spellings are
+      folded here; otherwise a run spanning the cutover splits into two rows whose
+      totals cannot be added. The satellite keeps the unit as written.
+
       Rare non-project usage is retained in an `ica_project is null` bucket, and
-      cost_unit remains in the aggregation grain so null or future units are
-      reported separately instead of being combined into an invalid total.
+      cost_unit stays in the grain so null or future units report separately
+      instead of being combined into an invalid total.
 
-      Costs are the amount actually charged. From the cutover Illumina applies a
-      discount, so cost is net of it; the discount itself is carried in
-      sat_workflow_run_ica_usage.cost_saved for anyone who needs it.
+      Costs are net of any Illumina discount; the discount itself is in
+      sat_workflow_run_ica_usage.cost_saved.
 
-      Category totals are zero only when no usage rows match the category.
-      When matching rows exist but all their costs are null, retain null to
-      expose the unknown source cost instead of reporting it as free usage.
+      Category totals are zero only when no usage rows match the category. When
+      rows match but all costs are null, retain null rather than reporting free usage.
     #}
 
     select

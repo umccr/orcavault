@@ -10,47 +10,28 @@
 {#
     Persistent history of the Illumina detailed usage report.
 
-    Illumina replaced the ICA Usage Explorer with the BioInsight Core Usage Explorer from the 2026-05 report
-    onwards, so the TSA table carries the union of two source layouts side by side:
+    Issue: from the 2026-05 report Illumina replaced the ICA Usage Explorer with BioInsight Core, so TSA now
+    holds two layouts at once.
 
-        Legacy (2026-04 and earlier)    BioInsight Core (2026-05 onwards)
-        ----------------------------    ---------------------------------
-        (none)                          row_seq             always 1 so far
-        price_per_unit                  list_rate           renamed, identical values
-        (none)                          applied_rate        rate actually charged, after discount
-        (none)                          pricing_method      "Standard Rate" so far
-        (none)                          cost_saved          quantity * (list_rate - applied_rate)
-        cost_unit "iCredits"            cost_unit "BIC"     renamed 1:1, values unchanged
-        (none)                          ica_v2              parsed from storage row metadata
-        (none)                          is_in_grace_period  parsed from storage row metadata
+        legacy      <= 2026-04   price_per_unit; cost_unit 'iCredits'
+        bioinsight  >= 2026-05   row_seq, pricing_method, list_rate, applied_rate, cost_saved;
+                                 cost_unit 'BIC' (renamed 1:1); ica_v2 + is_in_grace_period in metadata
 
-    This model stays a faithful mirror of the source. A column the other layout does not carry is null and
-    the units are stored exactly as written, iCredits before the cutover and BIC after. Reporting folds the
-    two spellings together; this model never does.
+    Resolution: carry the union. A column the other layout does not write stays null and units are stored as
+    the source wrote them. Reporting folds iCredits into BIC; this model never reconciles.
 
     Reload policy:
-
-      - on_schema_change='append_new_columns' adds a new column with ALTER TABLE, leaves it null on the rows
-        already loaded and never drops a column. This is what stops a Glue-side column addition from failing
-        the run, and it is the normal path for every future source change.
-      - full_refresh defaults to false, so a project-wide `dbt run --full-refresh` cannot silently discard
-        this history. Rebuild deliberately, naming the model, when that is what you mean:
-
+      - append_new_columns compares this model's own output against the live table, never TSA against this
+        model. A column added to the SQL below lands with ALTER TABLE instead of failing the run, but a
+        column Glue adds to TSA that this SQL does not select is dropped silently. That is exactly how the
+        seven BioInsight columns were missed; tests/assert_ica_usage_tsa_columns_captured.sql now warns.
+      - full_refresh is var-gated so a project-wide --full-refresh cannot discard this history:
             dbt run -s spreadsheet__ica_usage_report --vars '{ica_usage_full_refresh: true}'
+        A rebuild is lossless only while TSA still carries every source row. Verify that before rebuilding.
+      - Redshift ALTER COLUMN TYPE only widens varchar, so column types are near-irreversible.
 
-      - A rebuild is lossless only while TSA still carries every source row. Glue truncates and reloads TSA
-        from all CSVs under the source prefix on each run, so that holds today. It stops holding the moment a
-        source CSV is removed from the bucket or Illumina restates a past month; from then on this table is
-        the only record and a rebuild would silently drop rows. Check before rebuilding:
-
-            select count(*) from psa.spreadsheet__ica_usage_report p
-            where not exists (select 1 from <tsa hashed> t where t.usage_hash = p.usage_hash)
-
-      - Column types are near-irreversible on Redshift (ALTER COLUMN TYPE only widens varchar), so choose
-        them carefully the first time.
-
-    usage_hash is the append-only dedupe key and must never be redefined. Rows already loaded are skipped by
-    hash equality alone, so a new hash definition would re-append the entire history on the next run.
+    usage_hash must never be redefined. Rows are skipped by hash equality alone, so a new definition would
+    re-append the entire history.
 #}
 
 with source as (
@@ -205,11 +186,9 @@ non_empty as (
 hashed as (
 
     {#
-        (usage_id, billing_date) has been unique in every report to date because row_seq is always 1.
-        row_seq is deliberately left out of the hash: if Illumina ever emits row_seq > 1 the second row
-        collides on usage_hash and the unique test on this model fails, which is the intended alarm that
-        the source grain has changed. Do not widen the hash to silence it, the whole history would
-        re-append. Confirm the new grain with the team and repair in place instead.
+        row_seq is deliberately out of the hash. It is always 1 today; if Illumina ever emits row_seq > 1 the
+        row collides and the unique test fails, which is the intended alarm. Do not widen the hash to silence
+        it, that re-appends the whole history. Confirm the new grain with the team and repair in place.
     #}
 
     select

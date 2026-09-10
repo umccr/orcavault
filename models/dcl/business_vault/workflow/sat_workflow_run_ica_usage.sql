@@ -12,19 +12,17 @@
 {#
     Append-only pass-through of the Illumina usage rows that resolve to an ICA workflow run.
 
-    Both source layouts are carried exactly as PSA holds them (see psa.spreadsheet__ica_usage_report).
-    Legacy rows keep price_per_unit and leave the BioInsight Core columns null; BioInsight Core rows do the
-    reverse. Units stay as written (iCredits, BIC) so this satellite remains a faithful record. Illumina
-    renamed the unit 1:1 at the cutover, and the marts fold the two spellings together when reporting.
+    Both source layouts are carried exactly as PSA holds them: legacy rows keep price_per_unit, BioInsight
+    rows keep list_rate/applied_rate/cost_saved, and units stay as written. That keeps this a faithful
+    record; the marts fold iCredits into BIC when reporting.
 
-    Schema additions are applied in place with append_new_columns. full_refresh defaults to false so a
-    project-wide `dbt run --full-refresh` cannot discard the load_datetime history. Rebuild from PSA
-    deliberately with:
-
+    append_new_columns lands a column added to the SQL below with ALTER TABLE instead of failing the run. It
+    does not detect columns added upstream, and this model is a deliberate subset of PSA, so widening it is
+    always a code change. full_refresh is var-gated so a project-wide --full-refresh cannot discard the
+    load_datetime history:
         dbt run -s sat_workflow_run_ica_usage --vars '{ica_usage_full_refresh: true}'
-
-    A rebuild re-resolves execution IDs against the current workflow_manager CDC state, so the resolved set
-    can legitimately differ from the one first loaded. That is usually more correct, but it is a change.
+    A rebuild re-resolves execution IDs against current workflow_manager CDC state, so the resolved set can
+    legitimately differ from the one first loaded.
 #}
 
 with workflow_latest as (

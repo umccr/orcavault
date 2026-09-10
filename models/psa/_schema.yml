@@ -132,7 +132,9 @@ models:
       Carries the union of the legacy ICA Usage Explorer layout (2026-04 and earlier) and the BioInsight Core
       Usage Explorer layout (2026-05 onwards) side by side, exactly as the source wrote them. A column the
       other layout does not carry is null. Units (iCredits, BIC) are not normalised here.
-      Schema additions are applied in place with append_new_columns. A project-wide --full-refresh is ignored
+      A column added to this model's SQL is applied to the live table in place with append_new_columns; a
+      column added to TSA but not to this SQL is dropped silently, which the
+      assert_ica_usage_tsa_columns_captured test warns about. A project-wide --full-refresh is ignored
       so this history is never discarded by accident; rebuild deliberately with the ica_usage_full_refresh var.
       A rebuild is lossless only while TSA still carries every source row, which holds today but stops holding
       once a source CSV is removed or Illumina restates a past month.
