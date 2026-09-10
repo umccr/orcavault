@@ -14,8 +14,8 @@
 
     Both source layouts are carried exactly as PSA holds them (see psa.spreadsheet__ica_usage_report).
     Legacy rows keep price_per_unit and leave the BioInsight Core columns null; BioInsight Core rows do the
-    reverse. Units stay as written (iCredits, BIC). Reconciling the two eras is a business rule and lives in
-    int_workflow_run_ica_usage, so this satellite remains a faithful record.
+    reverse. Units stay as written (iCredits, BIC) so this satellite remains a faithful record. Illumina
+    renamed the unit 1:1 at the cutover, and the marts fold the two spellings together when reporting.
 
     Schema additions are applied in place with append_new_columns. full_refresh defaults to false so a
     project-wide `dbt run --full-refresh` cannot discard the load_datetime history. Rebuild from PSA

@@ -1,3 +1,0 @@
-source_unit,target_unit,conversion_rate,comment
-iCredits,BIC,1.000000,"Illumina converted iCredits balances to BioInsight Credits 1:1 at the 2026-05 BioInsight Core cutover. https://help.connected.illumina.com/account-management/software-billing"
-BIC,BIC,1.000000,"Identity mapping for the current Illumina BioInsight Credits unit."

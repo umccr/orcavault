@@ -27,17 +27,18 @@ cost as (
 
     {#
       ICA usage is normally associated with a project and billed in BIC.
-      int_workflow_run_ica_usage has already reconciled the two Illumina export
-      layouts and converted every amount from the unit the source wrote into
-      the reporting unit via the mdm__ica_billing_unit seed (iCredits to BIC at
-      1:1 today), so one workflow run never splits across two units.
+      Illumina renamed iCredits to BIC 1:1 at the 2026-05 BioInsight Core
+      cutover, so the two spellings are folded together here. Without that, a
+      run whose usage spans the cutover splits into two rows whose totals
+      cannot be added. The satellite keeps the unit exactly as the source
+      wrote it; folding them is a reporting decision and belongs here.
       Rare non-project usage is retained in an `ica_project is null` bucket, and
       cost_unit remains in the aggregation grain so null or future units are
       reported separately instead of being combined into an invalid total.
 
-      Costs are the amount actually charged. From the 2026-05 cutover Illumina
-      applies a discount, so cost is net of it; the discount itself is carried
-      in int_workflow_run_ica_usage.cost_saved for anyone who needs it.
+      Costs are the amount actually charged. From the cutover Illumina applies a
+      discount, so cost is net of it; the discount itself is carried in
+      sat_workflow_run_ica_usage.cost_saved for anyone who needs it.
 
       Category totals are zero only when no usage rows match the category.
       When matching rows exist but all their costs are null, retain null to
@@ -50,7 +51,7 @@ cost as (
             when ica.usage_context_type = 'Project' then ica.usage_context
             else null
         end as ica_project,
-        ica.cost_unit as cost_unit,
+        case when ica.cost_unit = 'iCredits' then 'BIC' else ica.cost_unit end as cost_unit,
         sum(ica.cost) as total_cost,
         case
             when count(
@@ -80,14 +81,14 @@ cost as (
                 end
             )
         end as license_cost
-    from {{ ref('int_workflow_run_ica_usage') }} ica
+    from {{ ref('sat_workflow_run_ica_usage') }} ica
     group by
         ica.workflow_run_hk,
         case
             when ica.usage_context_type = 'Project' then ica.usage_context
             else null
         end,
-        ica.cost_unit
+        case when ica.cost_unit = 'iCredits' then 'BIC' else ica.cost_unit end
 
 ),
 

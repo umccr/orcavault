@@ -23,4 +23,4 @@ models:
     description: >
       Listing of the Centre genomic sequencing analysis workflow run ICA costs by ICA project in flat table model.
       Costs are reported in BIC; usage billed in iCredits before the 2026-05 BioInsight Core cutover is
-      converted 1:1. Costs are net of any Illumina discount.
+      reported as BIC, since Illumina renamed the unit 1:1. Costs are net of any Illumina discount.

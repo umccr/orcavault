@@ -8,37 +8,3 @@ seeds:
         base_portal_run_id: char(16)
         alias_portal_run_id: char(16)
         comment: varchar
-
-  - name: mdm__ica_billing_unit
-    description: >
-      Master data for Illumina billing units. Maps the unit written by the usage export (source_unit) to the
-      unit the marts report in (target_unit) and the rate to multiply amounts by. Today it only records the 1:1
-      conversion of iCredits into BioInsight Credits (BIC) that Illumina applied at the 2026-05 cutover, plus
-      the BIC identity row. A unit missing here is passed through unchanged by int_workflow_run_ica_usage and
-      warns in its cost_unit test, so add a row here rather than a CASE in SQL when Illumina changes units again.
-    config:
-      column_types:
-        source_unit: varchar(255)
-        target_unit: varchar(255)
-        conversion_rate: numeric(9,6)
-        comment: varchar
-    columns:
-      - name: source_unit
-        description: Unit exactly as the usage export writes it.
-        data_tests:
-          - not_null
-          - unique
-      - name: target_unit
-        description: Unit the marts report in.
-        data_tests:
-          - not_null
-      - name: conversion_rate
-        description: Multiply a source_unit amount by this to express it in target_unit. Kept at numeric(9,6) so downstream multiplications stay within Redshift's 38-digit limit.
-        data_tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              arguments:
-                min_value: 0
-                inclusive: false
-      - name: comment
-        description: Why the mapping exists, with a source link where available.

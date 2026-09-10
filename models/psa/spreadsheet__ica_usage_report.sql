@@ -25,8 +25,8 @@
         (none)                          is_in_grace_period  parsed from storage row metadata
 
     This model stays a faithful mirror of the source. A column the other layout does not carry is null and
-    the units are stored exactly as written. The two eras are reconciled downstream in
-    dcl.int_workflow_run_ica_usage, never here.
+    the units are stored exactly as written, iCredits before the cutover and BIC after. Reporting folds the
+    two spellings together; this model never does.
 
     Reload policy:
 

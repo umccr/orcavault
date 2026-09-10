@@ -57,9 +57,9 @@ models:
       Append-only satellite of Illumina usage rows resolved to an ICA workflow run. Carries both the legacy
       ICA Usage Explorer layout (2026-04 and earlier) and the BioInsight Core layout (2026-05 onwards) exactly
       as PSA holds them; the era-specific columns are null for the other era and units stay as written.
-      Reconciliation lives in int_workflow_run_ica_usage. Schema additions are applied in place with
-      append_new_columns and a project-wide --full-refresh is ignored; rebuild from PSA deliberately with the
-      ica_usage_full_refresh var.
+      Units stay as written; the marts fold iCredits and BIC together, since Illumina renamed the unit 1:1.
+      Schema additions are applied in place with append_new_columns and a project-wide --full-refresh is
+      ignored; rebuild from PSA deliberately with the ica_usage_full_refresh var.
     config:
       contract: { enforced: true }
     constraints:
