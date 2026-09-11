@@ -37,22 +37,11 @@ with cdc as (
         and "key" not like '%.iap_xaccount_test.tmp'
 
     {% if is_incremental() %}
-        and partition_0 >= (
+        {# Compare the YYYY/MM/DD partitions as one date #}
+        and partition_0 || partition_1 || partition_2 >= (
             select to_char(
                 dateadd(day, -1, max(load_datetime)::date),
-                'YYYY'
-            ) from {{ this }}
-        )
-        and partition_1 >= (
-            select to_char(
-                dateadd(day, -1, max(load_datetime)::date),
-                'MM'
-            ) from {{ this }}
-        )
-        and partition_2 >= (
-            select to_char(
-                dateadd(day, -1, max(load_datetime)::date),
-                'DD'
+                'YYYYMMDD'
             ) from {{ this }}
         )
         and _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
