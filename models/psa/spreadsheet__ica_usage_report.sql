@@ -30,8 +30,9 @@
         A rebuild is lossless only while TSA still carries every source row. Verify that before rebuilding.
       - Redshift ALTER COLUMN TYPE only widens varchar, so column types are near-irreversible.
 
-    usage_hash must never be redefined. Rows are skipped by hash equality alone, so a new definition would
-    re-append the entire history.
+    usage_hash keys the billing event, (usage_id, row_seq, billing_date). Rows are skipped by hash equality
+    alone, so redefining it re-appends the whole history on an incremental run; change it only together with
+    a rebuild of this model and the satellite.
 #}
 
 with source as (
@@ -186,9 +187,9 @@ non_empty as (
 hashed as (
 
     {#
-        row_seq is deliberately out of the hash. It is always 1 today; if Illumina ever emits row_seq > 1 the
-        row collides and the unique test fails, which is the intended alarm. Do not widen the hash to silence
-        it, that re-appends the whole history. Confirm the new grain with the team and repair in place.
+        Grain is the billing event. Illumina confirmed one usage_id can split across rating mechanisms, e.g.
+        row_seq 1 draws a free allowance and row_seq 2 charges the remainder. Without row_seq the second row
+        fails the unique test, or is dropped silently if it lands in a later load. Legacy rows hash it as empty.
     #}
 
     select
@@ -196,6 +197,7 @@ hashed as (
         cast(
             {{ generate_hash_diff([
                 'usage_id',
+                'row_seq',
                 'billing_date'
             ]) }} as char(64)
         ) as usage_hash

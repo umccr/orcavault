@@ -73,6 +73,14 @@ models:
             combination_of_columns:
               - workflow_run_hk
               - usage_hash
+      # Same guard as PSA. Rebuilding PSA and then running this model incrementally re-appends every row under
+      # the new inherited hash, which unique(usage_hash) cannot see but this natural key can.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - usage_id
+              - row_seq
+              - billing_date
     columns:
       - name: workflow_run_hk
         data_type: char(64)
@@ -98,14 +106,14 @@ models:
         data_type: varchar(255)
       - name: usage_hash
         description: >
-          Append-only dedupe key inherited from PSA, hashed from usage_id and billing_date only. row_seq is
-          not part of the grain; a row_seq > 1 upstream surfaces as a unique-test failure by design.
+          Billing-event key inherited from PSA: SHA-256 of usage_id, row_seq and billing_date. One usage event can
+          split into several billing events, so row_seq is part of the grain.
         data_type: char(64)
         data_tests:
           - not_null
           - unique
       - name: row_seq
-        description: BioInsight Core only. Always 1 so far; null for legacy rows.
+        description: BioInsight Core only. Billing-event sequence within a usage event, e.g. an allowance row then a charge row. Always 1 so far; null for legacy rows.
         data_type: integer
       - name: usage_context
         data_type: varchar(255)
@@ -123,7 +131,7 @@ models:
         description: As written by the source. iCredits before the 2026-05 cutover, BIC after (1:1 rename).
         data_type: varchar(255)
       - name: pricing_method
-        description: BioInsight Core only. Always Standard Rate so far; null for legacy rows.
+        description: BioInsight Core only. Pricing Mechanism for this billing event, expected to distinguish the rows of a split usage. Always Standard Rate so far; null for legacy rows.
         data_type: varchar(255)
       - name: price_per_unit
         description: Legacy only. Renamed list_rate in the BioInsight Core layout; null from 2026-05 onwards.
