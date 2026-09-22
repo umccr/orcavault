@@ -53,6 +53,14 @@ models:
         data_type: smallint
 
   - name: sat_workflow_run_ica_usage
+    description: >
+      Append-only satellite of Illumina usage rows resolved to an ICA workflow run. Carries both the legacy
+      ICA Usage Explorer layout (2026-04 and earlier) and the BioInsight Core layout (2026-05 onwards) exactly
+      as PSA holds them; the era-specific columns are null for the other era and units stay as written.
+      Units stay as written; the marts fold iCredits and BIC together, since Illumina renamed the unit 1:1.
+      A column added to this model's SQL is applied in place with append_new_columns; this model is a
+      deliberate subset of PSA, so widening it is always a code change. A project-wide --full-refresh is
+      ignored; rebuild from PSA deliberately with the ica_usage_full_refresh var.
     config:
       contract: { enforced: true }
     constraints:
@@ -65,6 +73,14 @@ models:
             combination_of_columns:
               - workflow_run_hk
               - usage_hash
+      # Same guard as PSA. Rebuilding PSA and then running this model incrementally re-appends every row under
+      # the new inherited hash, which unique(usage_hash) cannot see but this natural key can.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - usage_id
+              - row_seq
+              - billing_date
     columns:
       - name: workflow_run_hk
         data_type: char(64)
@@ -89,10 +105,16 @@ models:
       - name: usage_id
         data_type: varchar(255)
       - name: usage_hash
+        description: >
+          Billing-event key inherited from PSA: SHA-256 of usage_id, row_seq and billing_date. One usage event can
+          split into several billing events, so row_seq is part of the grain.
         data_type: char(64)
         data_tests:
           - not_null
           - unique
+      - name: row_seq
+        description: BioInsight Core only. Billing-event sequence within a usage event, e.g. an allowance row then a charge row. Always 1 so far; null for legacy rows.
+        data_type: integer
       - name: usage_context
         data_type: varchar(255)
       - name: usage_context_type
@@ -106,12 +128,27 @@ models:
       - name: usage_quantity
         data_type: numeric(38,20)
       - name: usage_unit
+        description: As written by the source. iCredits before the 2026-05 cutover, BIC after (1:1 rename).
+        data_type: varchar(255)
+      - name: pricing_method
+        description: BioInsight Core only. Pricing Mechanism for this billing event, expected to distinguish the rows of a split usage. Always Standard Rate so far; null for legacy rows.
         data_type: varchar(255)
       - name: price_per_unit
+        description: Legacy only. Renamed list_rate in the BioInsight Core layout; null from 2026-05 onwards.
+        data_type: numeric(25,20)
+      - name: list_rate
+        description: BioInsight Core only. Rate per unit before discount; null for legacy rows.
+        data_type: numeric(25,20)
+      - name: applied_rate
+        description: BioInsight Core only. Rate per unit actually charged; cost = usage_quantity * applied_rate. Null for legacy rows.
         data_type: numeric(25,20)
       - name: cost
         data_type: numeric(25,20)
+      - name: cost_saved
+        description: BioInsight Core only. usage_quantity * (list_rate - applied_rate); null for legacy rows.
+        data_type: numeric(25,20)
       - name: cost_unit
+        description: As written by the source. iCredits before the 2026-05 cutover, BIC after (1:1 rename).
         data_type: varchar(255)
       - name: category
         data_type: varchar(255)
@@ -124,6 +161,12 @@ models:
       - name: is_license_cost
         data_type: boolean
       - name: id_matches_reference
+        data_type: boolean
+      - name: ica_v2
+        description: BioInsight Core only. Parsed from storage row metadata; null otherwise.
+        data_type: boolean
+      - name: is_in_grace_period
+        description: BioInsight Core only. Parsed from storage row metadata, explains zero-cost storage rows; null otherwise.
         data_type: boolean
       - name: billing_date
         data_type: date
