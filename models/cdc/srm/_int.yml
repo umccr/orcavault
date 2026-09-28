@@ -13,5 +13,12 @@ version: 2
 models:
 
   - name: int_cdc_srm_sequence
+    columns: &current_state_key
+      - name: orcabus_id
+        description: >-
+          This is key that the current state row is chosen for.
+        data_tests:
+          - not_null
   - name: int_cdc_srm_libraryassociation
+    columns: *current_state_key
   - name: int_cdc_srm_libraryassociation_sequence

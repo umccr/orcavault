@@ -31,21 +31,21 @@
         {%- endif -%}
     {% endset %}
 
-select
-    source.*,
-    {#- The $path is s3://bucket/key, so max length is 5 + 63 + 1 + 1024 = 1093 #}
-    cast(source."$path" as varchar(1093)) as source_file_path,
-    cast('{{ run_started_at }}' as timestamptz) as load_datetime,
-    '{{ source_name }}_{{ table_name }}'::varchar(100) as record_source,
-    {{ partition_date }} as source_partition_date
-from {{ source(source_name, table_name) }} as source
-{% if is_incremental() %}
-{#- This is what ingests the correct files, i.e. everything that hasn't been seen yet. #}
-where not exists (
-    select 1
-    from {{ this }} as staged
-    where staged.source_file_path = source."$path"
-)
-{% endif %}
+    select
+        source.*,
+        {#- The $path is s3://bucket/key, so max length is 5 + 63 + 1 + 1024 = 1093 #}
+        cast(source."$path" as varchar(1093)) as source_file_path,
+        cast('{{ run_started_at }}' as timestamptz) as load_datetime,
+        '{{ source_name }}_{{ table_name }}'::varchar(100) as record_source,
+        {{ partition_date }} as source_partition_date
+    from {{ source(source_name, table_name) }} as source
+    {% if is_incremental() %}
+    {#- This is what ingests the correct files, i.e. everything that hasn't been seen yet. #}
+    where not exists (
+        select 1
+        from {{ this }} as staged
+        where staged.source_file_path = source."$path"
+    )
+    {% endif %}
 
 {% endmacro %}

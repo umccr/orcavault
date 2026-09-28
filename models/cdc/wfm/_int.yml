@@ -13,6 +13,14 @@ version: 2
 models:
 
   - name: int_cdc_wfm_workflowrun
+    columns: &current_state_key
+      - name: orcabus_id
+        description: >-
+          This is key that the current state row is chosen for.
+        data_tests:
+          - not_null
   - name: int_cdc_wfm_library
+    columns: *current_state_key
   - name: int_cdc_wfm_libraryassociation
+    columns: *current_state_key
   - name: int_cdc_wfm_libraryassociation_workflowrun

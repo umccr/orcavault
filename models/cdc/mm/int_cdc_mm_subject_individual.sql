@@ -12,6 +12,11 @@ select * from (
             cast(sbj._dms_cdc_timestamp as timestamptz),
             cast(idv._dms_cdc_timestamp as timestamptz)
         )                                               as association_date,
+        greatest(
+            lnk.load_datetime,
+            sbj.load_datetime,
+            idv.load_datetime
+        )                                               as change_datetime,
         'orcabus_metadata_manager'                      as record_source,
         row_number() over (
             partition by idv.individual_id, sbj.subject_id
