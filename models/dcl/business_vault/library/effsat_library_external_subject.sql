@@ -20,7 +20,7 @@ with incremental as (
     select distinct library_hk
     from {{ ref('link_library_external_subject') }}
     {% if is_incremental() %}
-    where load_datetime > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

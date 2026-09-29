@@ -62,7 +62,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata'    as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where load_datetime > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),
@@ -73,13 +73,15 @@ cdc_source as (
         prj.project_id,
         cnt.contact_id                              as owner_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ source('orcabus_metadata_manager', 'app_projectcontactlink') }} lnk
-        join {{ source('orcabus_metadata_manager', 'app_project') }} prj
+    from {{ ref('cdc_mm_app_projectcontactlink') }} lnk
+        join {{ ref('cdc_mm_app_project') }} prj
             on prj.orcabus_id = lnk.project_orcabus_id
-        join {{ source('orcabus_metadata_manager', 'app_contact') }} cnt
+        join {{ ref('cdc_mm_app_contact') }} cnt
             on cnt.orcabus_id = lnk.contact_orcabus_id
     {% if is_incremental() %}
-    where lnk._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('lnk.load_datetime') }}
+       or {{ watermark_bound('prj.load_datetime') }}
+       or {{ watermark_bound('cnt.load_datetime') }}
     {% endif %}
 
 ),

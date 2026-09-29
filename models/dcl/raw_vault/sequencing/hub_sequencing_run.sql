@@ -61,9 +61,9 @@ with cdc_source as (
     select distinct
         instrument_run_id as sequencing_run_id,
         'orcabus_sequence_run_manager' as record_source
-    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
+    from {{ ref('cdc_srm_sequence') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

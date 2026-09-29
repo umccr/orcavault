@@ -20,13 +20,22 @@ with cdc_affected_keys as (
 
     select distinct workflow_run_hk
     from (
-        select workflow_run_hk, _dms_cdc_timestamp from {{ ref('sat_workflow_run_detail') }}
+        select workflow_run_hk
+        from {{ ref('sat_workflow_run_detail') }}
+        where {{ watermark_bound('load_datetime') }}
+
         union all
-        select workflow_run_hk, _dms_cdc_timestamp from {{ ref('sat_workflow_run_comment') }}
+
+        select workflow_run_hk
+        from {{ ref('sat_workflow_run_comment') }}
+        where {{ watermark_bound('load_datetime') }}
+
         union all
-        select workflow_run_hk, _dms_cdc_timestamp from {{ ref('sat_workflow_run_state') }}
+
+        select workflow_run_hk
+        from {{ ref('sat_workflow_run_state') }}
+        where {{ watermark_bound('load_datetime') }}
     ) t
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
 
     {% else %}
 

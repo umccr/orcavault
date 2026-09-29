@@ -20,9 +20,9 @@ with source as (
         quality,
         op,
         _dms_cdc_timestamp
-    from {{ source('orcabus_metadata_manager', 'app_library') }}
+    from {{ ref('cdc_mm_app_library') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

@@ -61,7 +61,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata' as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where load_datetime > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),
@@ -71,9 +71,9 @@ cdc_source as (
     select distinct
         sample_id,
         'orcabus_metadata_manager' as record_source
-    from {{ source('orcabus_metadata_manager', 'app_sample') }}
+    from {{ ref('cdc_mm_app_sample') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

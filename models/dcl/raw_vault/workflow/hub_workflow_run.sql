@@ -55,9 +55,9 @@ with cdc_source as (
     select distinct
         portal_run_id,
         'workflow_manager_workflowrun' as record_source
-    from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
+    from {{ ref('cdc_wfm_workflowrun') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

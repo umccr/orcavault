@@ -57,9 +57,9 @@ with source as (
         bucket,
         "key",
         'orcabus_filemanager_s3_object' as record_source
-    from {{ source('orcabus_filemanager', 's3_object') }}
+    from {{ ref('cdc_fm_s3_object') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),

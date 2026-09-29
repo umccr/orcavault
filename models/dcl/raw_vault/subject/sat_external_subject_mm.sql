@@ -15,9 +15,9 @@ with source as (
         orcabus_id,
         op,
         _dms_cdc_timestamp
-    from {{ source('orcabus_metadata_manager', 'app_subject') }}
+    from {{ ref('cdc_mm_app_subject') }}
     {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+    where {{ watermark_bound('load_datetime') }}
     {% endif %}
 
 ),
