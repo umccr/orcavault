@@ -18,6 +18,12 @@
         {{ return('') }}
     {% endif %}
 
+    {#- We must consider legacy loading as separate, and it should not be tracked by the
+        watermark bound. -#}
+    {% if var('load_legacy', false) %}
+        {{ return('') }}
+    {% endif %}
+
     {% set sql %}
         merge into meta.model_position
             using (
