@@ -1,30 +1,30 @@
-houseRule () {
+house_rule () {
 cat <<EOF
 01. let keep the kiss principle for the dx script
 02. you may directly execute each function wrapped commands
 EOF
 }
 
-houseKey () {
+house_key () {
   aws ssm get-parameter --name 'orcahouse-mgmt' --output text --with-decryption --query 'Parameter.Value' > ~/.ssh/orcahouse-mgmt # pragma: allowlist secret
   chmod 600 ~/.ssh/orcahouse-mgmt
   ls -l ~/.ssh/orcahouse-mgmt
 }
 
-houseInstance () {
+house_instance () {
   aws ec2 describe-instances \
     --filters 'Name=tag:Name,Values=orcahouse-mgmt-*' \
     --output text \
     --query 'Reservations[*].Instances[*].InstanceId'
 }
 
-houseEndpoint () {
+house_endpoint () {
   aws redshift-serverless get-workgroup --workgroup-name orcahouse-dev --output text --query 'workgroup.endpoint.address'
 }
 
-houseHost () {
+house_host () {
   IP_ADDR="127.0.0.1"
-  DOMAIN=$(houseEndpoint)
+  DOMAIN=$(house_endpoint)
 
   # Check if the entry already exists
   if getent hosts "$DOMAIN" > /dev/null 2>&1; then
@@ -37,13 +37,13 @@ houseHost () {
   fi
 }
 
-houseCheckHost () {
-  getent hosts "$(houseEndpoint)"
+house_check_host () {
+  getent hosts "$(house_endpoint)"
 }
 
-houseUndoHost () {
+house_undo_host () {
   IP_ADDR="127.0.0.1"
-  DOMAIN=$(houseEndpoint)
+  DOMAIN=$(house_endpoint)
   ENTRY="$IP_ADDR $DOMAIN"
 
   # Check for the exact line in /etc/hosts (ignoring trailing whitespace)
@@ -59,45 +59,49 @@ houseUndoHost () {
   fi
 }
 
-houseTunnel () {
-  ssh -f -N -L 127.0.0.1:5439:"$(houseEndpoint)":5439 \
-    ubuntu@"$(houseInstance)" -i ~/.ssh/orcahouse-mgmt \
+house_tunnel () {
+  ssh -f -N -L 127.0.0.1:5439:"$(house_endpoint)":5439 \
+    ubuntu@"$(house_instance)" -i ~/.ssh/orcahouse-mgmt \
     -o ProxyCommand='aws ec2-instance-connect open-tunnel --instance-id %h'
 }
 
-houseTunnelFg () {
+house_tunnel_fg () {
   # keep tunnel in the foreground, ctrl+c to end the tunnel session
-  ssh -v -N -L 127.0.0.1:5439:"$(houseEndpoint)":5439 \
-    ubuntu@"$(houseInstance)" -i ~/.ssh/orcahouse-mgmt \
+  ssh -v -N -L 127.0.0.1:5439:"$(house_endpoint)":5439 \
+    ubuntu@"$(house_instance)" -i ~/.ssh/orcahouse-mgmt \
     -o ProxyCommand='aws ec2-instance-connect open-tunnel --instance-id %h'
 }
 
-houseStatus () {
+house_nc () {
+  nc -vz 127.0.0.1 5439
+}
+
+house_status () {
   # ps aux | grep '[s]sh'
   # ps aux | grep '[o]rcahouse-mgmt'
   ps aux | grep '[o]pen-tunnel'
 }
 
-houseStop () {
+house_stop () {
   # kill <PID>
   pkill -f "open-tunnel"
 }
 
-houseForward () {
+house_forward () {
   aws ssm start-session \
-    --target "$(houseInstance)" \
+    --target "$(house_instance)" \
     --document-name AWS-StartPortForwardingSessionToRemoteHost \
-    --parameters "{\"portNumber\":[\"5439\"],\"localPortNumber\":[\"5439\"],\"host\":[\"$(houseEndpoint)\"]}"
+    --parameters "{\"portNumber\":[\"5439\"],\"localPortNumber\":[\"5439\"],\"host\":[\"$(house_endpoint)\"]}"
 }
 
-houseCred () {
-  DBT_ENV_SECRET_HOST=$(houseEndpoint)
+house_cred () {
+  DBT_ENV_SECRET_HOST=$(house_endpoint)
   export DBT_ENV_SECRET_HOST
   export DBT_ENV_SECRET_USER="dbt" # pragma: allowlist secret
   env | grep DBT
 }
 
-houseClean () {
+house_clean () {
   unset DBT_ENV_SECRET_HOST DBT_ENV_SECRET_PASSWORD DBT_ENV_SECRET_USER
   env | grep DBT
 }
