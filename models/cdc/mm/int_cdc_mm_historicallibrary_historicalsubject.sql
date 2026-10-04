@@ -17,7 +17,7 @@ select * from (
             cast(lib._dms_cdc_timestamp as timestamptz),
             cast(sbj._dms_cdc_timestamp as timestamptz)
         )                                               as association_date,
-        greatest(lib.load_datetime, sbj.load_datetime)  as change_datetime,
+        (lib.cdc_changed or sbj.cdc_changed)            as cdc_changed,
         'orcabus_metadata_manager'                      as record_source,
         row_number() over (
             partition by lib.library_id, lib.subject_orcabus_id

@@ -1,1 +1,1 @@
-{{ cdc_current_state('cdc_mm_app_sample') }}
+{{ int_cdc_state('orcabus_metadata_manager', 'app_sample') }}

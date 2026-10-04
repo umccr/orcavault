@@ -1,3 +1,3 @@
 {# NOTE: THIS IS external_subject_id #}
 
-{{ cdc_current_state('cdc_mm_app_subject') }}
+{{ int_cdc_state('orcabus_metadata_manager', 'app_subject') }}

@@ -1,1 +1,1 @@
-{{ cdc_current_state('cdc_srm_sequence') }}
+{{ int_cdc_state('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}

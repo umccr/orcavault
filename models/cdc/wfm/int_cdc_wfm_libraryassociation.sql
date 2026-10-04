@@ -1,1 +1,1 @@
-{{ cdc_current_state('cdc_wfm_libraryassociation') }}
+{{ int_cdc_state('orcabus_workflow_manager', 'workflow_manager_libraryassociation') }}

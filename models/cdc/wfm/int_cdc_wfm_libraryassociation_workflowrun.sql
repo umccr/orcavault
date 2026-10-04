@@ -13,11 +13,11 @@ select * from (
             cast(wfr._dms_cdc_timestamp as timestamptz),
             cast(lib._dms_cdc_timestamp as timestamptz)
         )                                               as association_date,
-        greatest(
-            lnk.load_datetime,
-            wfr.load_datetime,
-            lib.load_datetime
-        )                                               as change_datetime,
+        (
+            lnk.cdc_changed
+            or wfr.cdc_changed
+            or lib.cdc_changed
+        )                                               as cdc_changed,
         'orcabus_workflow_manager'                      as record_source,
         row_number() over (
             partition by wfr.portal_run_id, lib.library_id
