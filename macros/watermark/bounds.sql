@@ -1,55 +1,91 @@
-{% macro watermark_bound(change_expression='load_datetime') %}
+{% macro cdc_watermark_value(source_name, table_name, column) -%}
     {#-
 
-    This calculates the bound for an incremental model's read. It picks a starting position,
-    then keeps the rows whose `change_expression` is later than that position and not
-    later than the run's `run_started_at`. The starting position is:
-
-    1. If the target is empty, no lower bound, so everything is read.
-    2. If nothing is stored in `meta.model_position`, the target's `max(load_datetime)`.
-    3. If the target's current `max(load_datetime)` is below the stored `target_max_at_write`,
-       rows were deleted and the stored position is no longer valid, so use the target's
-       `max(load_datetime)`.
-    4. Otherwise, the stored `position`.
-
-    The stored position moves forward on every successful run, including a no load run. If it
-    is missing or invalid, the fallback is correctly the target's own `max(load_datetime)`. This
-    is safe because `load_datetime` is created inside the PSA models, and everything afterwards
-    compares against the same warehouse clock. The PSA models themselves use the file path as the
-    identity for what needs to be loaded.
+    Get an `ops.cdc_watermark.<column>` value from the watermark table. This will check that the
+    source has a `cdc` tag and error if it doesn't.
 
     -#}
+    {%- if execute -%}
+        {%- set node = graph.sources.get('source.' ~ project_name ~ '.' ~ source_name ~ '.' ~ table_name) -%}
+        {%- if node is none or 'cdc' not in node.tags -%}
+            {{ exceptions.raise_compiler_error(
+                source_name ~ '.' ~ table_name ~ " has no CDC position: tag it 'cdc' in models/cdc/_sources.yml"
+            ) }}
+        {%- endif -%}
+    {%- endif -%}
 
-    {#- If this is not an incremental run, then don't add a bound. -#}
-    {% if not is_incremental() %}
-        {{ return('true') }}
-    {% endif %}
+    (select p.{{ column }} from ops.cdc_watermark p where p.source_id = '{{ source_name }}.{{ table_name }}')
+{%- endmacro %}
 
-    {% set stored_position %}
-        (select p.position from meta.model_position p where p.model_id = '{{ model.unique_id }}')
-    {%- endset %}
-    {% set stored_max %}
-        (select p.target_max_at_write from meta.model_position p where p.model_id = '{{ model.unique_id }}')
-    {%- endset %}
-    {% set target_max %}
-        (select max(load_datetime) from {{ this }})
-    {%- endset %}
 
-    {#- Null only when the target is empty, which means no lower bound. -#}
-    {% set lower_bound %}
-        case
-            when {{ stored_max }} is null
-              or {{ target_max }} is null
-              or {{ target_max }} < {{ stored_max }}
-            then {{ target_max }}
-            else {{ stored_position }}
-        end
-    {%- endset %}
+{% macro cdc_upper_bound(source_name, table_name, change_expression='_dms_cdc_timestamp') -%}
+    {#-
 
-    (
+    This computes whether a CDC row is visible for this run. That is, whether it is committed
+    at or before the `pending` value recorded at the run start. It is effectively the upper
+    bound on what to load.
+
+    -#}
+    {%- set pending = cdc_watermark_value(source_name, table_name, 'pending') -%}
+    (({{ change_expression }}) <= {{ pending }} or {{ pending }} is null)
+{%- endmacro %}
+
+
+{% macro cdc_window(source_name, table_name, change_expression='_dms_cdc_timestamp') -%}
+    {#-
+
+    This computes whether a CDC row is in this run's load window. That is, whether it is
+    committed after the `position` and before `pending`.
+
+    Strictly speaking, we don't have to have an upper bound to the window, as deduplication
+    would take care of any records loaded more than once. However, it falls out conveniently
+    from having `pending`, and it means that successive runs have no overlap between rows.
+    This is important to prevent run failures that result in models where the dependency is
+    not visible yet for a row, causing a constraint error, such as with `sat_s3object_fm_current`.
+
+    -#}
+    {%- set position = cdc_watermark_value(source_name, table_name, 'position') -%}
+    ((({{ change_expression }}) > {{ position }} or {{ position }} is null)
+        and {{ cdc_upper_bound(source_name, table_name, change_expression) }})
+{%- endmacro %}
+
+
+{% macro cdc_bound(source_name, table_name, change_expression='_dms_cdc_timestamp') -%}
+    {#-
+
+    This is a convenience to compute either the window or the upper bound only, because
+    non-incremental loads don't need a window, and only benefit from the upper bound.
+
+    -#}
+    {%- if is_incremental() -%}
+        {{ cdc_window(source_name, table_name, change_expression) }}
+    {%- else -%}
+        {{ cdc_upper_bound(source_name, table_name, change_expression) }}
+    {%- endif -%}
+{%- endmacro %}
+
+
+{% macro load_bound(change_expression='load_datetime') -%}
+    {#-
+
+    This is the bound for the `load_datetime` for models that don't use the `_dms_cdc_timestamp`.
+    That is, it determines which rows to load for all dbt models themselves, rather than CDC
+    sources.
+
+    Passing in  `--vars '{"reread_from": "<timestamp>"}'` is useful if an operation ever wants
+    to manually read only rows from a certain timepoint. It overrides the lower bound, and reads
+    all rows with a `load_datetime` after `reread_from`, which can be used to repair rows. The
+    bound is strict, so it should be before the `load_datetime` of the first row to repair.
+
+    -#}
+    {%- if is_incremental() -%}
+        {%- if var('reread_from', none) -%}
+            {%- set lower_bound = "cast('" ~ var('reread_from') ~ "' as timestamptz)" -%}
+        {%- else -%}
+            {%- set lower_bound = '(select max(load_datetime) from ' ~ this ~ ')' -%}
+        {%- endif -%}
         (({{ change_expression }}) > {{ lower_bound }} or {{ lower_bound }} is null)
-        {#- Check to make sure that the upper bound is also exact, only load up to what this
-            specific run will cover. -#}
-        and ({{ change_expression }}) <= cast('{{ run_started_at }}' as timestamptz)
-    )
-{% endmacro %}
+    {%- else -%}
+        true
+    {%- endif -%}
+{%- endmacro %}
