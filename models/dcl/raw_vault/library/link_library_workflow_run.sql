@@ -65,7 +65,7 @@ with cdc_source as (
         'orcabus_workflow_manager'                  as record_source
     from {{ ref('int_cdc_wfm_libraryassociation_workflowrun') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('change_datetime') }}
+    where cdc_changed
     {% endif %}
 
 ),

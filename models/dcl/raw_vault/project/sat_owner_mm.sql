@@ -18,10 +18,8 @@ with source as (
         email,
         op,
         _dms_cdc_timestamp
-    from {{ ref('cdc_mm_app_contact') }}
-    {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
-    {% endif %}
+    from {{ source('orcabus_metadata_manager', 'app_contact') }}
+    where {{ cdc_bound('orcabus_metadata_manager', 'app_contact') }}
 
 ),
 

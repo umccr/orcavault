@@ -48,9 +48,7 @@ with cdc_deduplicated as (
                 order by _dms_cdc_timestamp desc
             ) as rn
         from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
-        {% if is_incremental() %}
-        where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
-        {% endif %}
+        where {{ cdc_bound('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
     ) t
     where rn = 1
 

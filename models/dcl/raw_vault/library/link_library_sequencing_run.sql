@@ -61,7 +61,7 @@ with cdc_source as (
         'orcabus_sequence_run_manager'              as record_source
     from {{ ref('int_cdc_srm_libraryassociation_sequence') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('change_datetime') }}
+    where cdc_changed
     {% endif %}
 
 ),

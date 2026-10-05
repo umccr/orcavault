@@ -61,7 +61,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata'    as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),
@@ -74,7 +74,7 @@ cdc_source as (
         'orcabus_metadata_manager'                  as record_source
     from {{ ref('int_cdc_mm_library_subject') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('change_datetime') }}
+    where cdc_changed
     {% endif %}
 
 ),

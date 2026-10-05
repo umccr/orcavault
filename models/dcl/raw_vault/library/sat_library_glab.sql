@@ -25,7 +25,7 @@ with source as (
     where library_id is not null
       and library_id <> ''
     {% if is_incremental() %}
-      and {{ watermark_bound('load_datetime') }}
+      and {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

@@ -60,7 +60,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata'    as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

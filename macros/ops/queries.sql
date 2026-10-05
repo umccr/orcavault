@@ -79,8 +79,8 @@
 {% macro update_source_positions(results) %}
     {#-
 
-    This macro updates the `ops.cdc_watermark.position` to the new `pending value after the run
-    as successfully completed. This is the reference point for the next run, and is used to continue
+    This macro updates the `ops.cdc_watermark.position` to the new `pending` value after the run
+    has successfully completed. This is the reference point for the next run, and is used to continue
     incremental loads from.
 
     -#}

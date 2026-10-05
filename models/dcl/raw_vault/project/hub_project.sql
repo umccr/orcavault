@@ -44,8 +44,8 @@ legacy_cleaned as (
 {# ============================================================ #}
 {# ACTIVE BLOCK (daily incremental)                             #}
 {# Two active sources — spreadsheet PSA layer and CDC.          #}
-{# Queries only differential records beyond the warehouse's     #}
-{# known horizon (max load_datetime from the Hub).              #}
+{# Each source is read from where the last run left off:        #}
+{# CDC with cdc_bound, the spreadsheet PSA with load_bound.     #}
 {# ============================================================ #}
 
 spreadsheet_source as (
@@ -61,7 +61,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata' as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),
@@ -71,10 +71,8 @@ cdc_source as (
     select distinct
         project_id,
         'orcabus_metadata_manager' as record_source
-    from {{ ref('cdc_mm_app_project') }}
-    {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
-    {% endif %}
+    from {{ source('orcabus_metadata_manager', 'app_project') }}
+    where {{ cdc_bound('orcabus_metadata_manager', 'app_project') }}
 
 ),
 

@@ -16,10 +16,8 @@ with source as (
         source,
         op,
         _dms_cdc_timestamp
-    from {{ ref('cdc_mm_app_individual') }}
-    {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
-    {% endif %}
+    from {{ source('orcabus_metadata_manager', 'app_individual') }}
+    where {{ cdc_bound('orcabus_metadata_manager', 'app_individual') }}
 
 ),
 

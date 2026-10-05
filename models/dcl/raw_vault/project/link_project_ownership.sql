@@ -62,7 +62,7 @@ with spreadsheet_source as (
         'spreadsheet__library_tracking_metadata'    as record_source
     from {{ ref('spreadsheet__library_tracking_metadata') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),
@@ -73,15 +73,21 @@ cdc_source as (
         prj.project_id,
         cnt.contact_id                              as owner_id,
         'orcabus_metadata_manager'                  as record_source
-    from {{ ref('cdc_mm_app_projectcontactlink') }} lnk
-        join {{ ref('cdc_mm_app_project') }} prj
+    from {{ source('orcabus_metadata_manager', 'app_projectcontactlink') }} lnk
+        join {{ source('orcabus_metadata_manager', 'app_project') }} prj
             on prj.orcabus_id = lnk.project_orcabus_id
-        join {{ ref('cdc_mm_app_contact') }} cnt
+        join {{ source('orcabus_metadata_manager', 'app_contact') }} cnt
             on cnt.orcabus_id = lnk.contact_orcabus_id
+    where {{ cdc_upper_bound('orcabus_metadata_manager', 'app_projectcontactlink', 'lnk._dms_cdc_timestamp') }}
+      and {{ cdc_upper_bound('orcabus_metadata_manager', 'app_project', 'prj._dms_cdc_timestamp') }}
+      and {{ cdc_upper_bound('orcabus_metadata_manager', 'app_contact', 'cnt._dms_cdc_timestamp') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('lnk.load_datetime') }}
-       or {{ watermark_bound('prj.load_datetime') }}
-       or {{ watermark_bound('cnt.load_datetime') }}
+      {#- A change on any of these should reprocess, since any of them can be last. #}
+      and (
+          {{ cdc_window('orcabus_metadata_manager', 'app_projectcontactlink', 'lnk._dms_cdc_timestamp') }}
+          or {{ cdc_window('orcabus_metadata_manager', 'app_project', 'prj._dms_cdc_timestamp') }}
+          or {{ cdc_window('orcabus_metadata_manager', 'app_contact', 'cnt._dms_cdc_timestamp') }}
+      )
     {% endif %}
 
 ),

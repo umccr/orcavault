@@ -10,10 +10,24 @@
 
 with wfr_lookup as (
 
-    select distinct
+    {#
+
+    This lookup gets every workflow run up to `pending`, not only those in this dbt run's window.
+    A state in the window can belong to a workflow run committed in an earlier dbt run,
+    and the inner join below would drop it if the lookup didn't have that workflow run.
+
+    Its newest commit time lets the `cdc_window` reprocess a state where the workflow run
+    arrived after it, since the join would have dropped that state otherwise.
+
+    #}
+
+    select
         orcabus_id,
-        portal_run_id
+        portal_run_id,
+        max(_dms_cdc_timestamp) as _dms_cdc_timestamp
     from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
+    where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
+    group by orcabus_id, portal_run_id
 
 ),
 
@@ -37,8 +51,12 @@ source as (
         stt._dms_cdc_timestamp
     from {{ source('orcabus_workflow_manager', 'workflow_manager_state') }} stt
         join wfr_lookup wfr on wfr.orcabus_id = stt.workflow_run_id
+    where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_state', 'stt._dms_cdc_timestamp') }}
     {% if is_incremental() %}
-    where stt._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+      and (
+          {{ cdc_window('orcabus_workflow_manager', 'workflow_manager_state', 'stt._dms_cdc_timestamp') }}
+          or {{ cdc_window('orcabus_workflow_manager', 'workflow_manager_workflowrun', 'wfr._dms_cdc_timestamp') }}
+      )
     {% endif %}
 
 ),

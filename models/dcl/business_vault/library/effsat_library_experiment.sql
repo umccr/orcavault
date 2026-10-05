@@ -15,7 +15,7 @@ with incremental as (
     select distinct library_hk
     from {{ ref('link_library_experiment') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

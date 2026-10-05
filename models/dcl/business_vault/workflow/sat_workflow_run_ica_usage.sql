@@ -23,7 +23,8 @@ with workflow_latest as (
                 partition by orcabus_id
                 order by _dms_cdc_timestamp desc
             ) as rn
-        from {{ ref('cdc_wfm_workflow') }}
+        from {{ source('orcabus_workflow_manager', 'workflow_manager_workflow') }}
+        where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_workflow') }}
     ) as ranked
     where rn = 1
 
@@ -46,7 +47,8 @@ workflow_run_latest as (
                 partition by orcabus_id
                 order by _dms_cdc_timestamp desc
             ) as rn
-        from {{ ref('cdc_wfm_workflowrun') }}
+        from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
+        where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
     ) as ranked
     where rn = 1
 

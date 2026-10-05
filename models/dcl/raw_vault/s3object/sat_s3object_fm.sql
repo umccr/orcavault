@@ -35,16 +35,14 @@ with cdc as (
     where
         "key" not like '%.iap_upload_test.tmp'
         and "key" not like '%.iap_xaccount_test.tmp'
+        and {{ cdc_bound('orcabus_filemanager', 's3_object') }}
 
     {% if is_incremental() %}
-        {# Compare the YYYY/MM/DD partitions as one date #}
-        and partition_0 || partition_1 || partition_2 >= (
-            select to_char(
-                dateadd(day, -1, max(load_datetime)::date),
-                'YYYYMMDD'
-            ) from {{ this }}
+        {# Compare the YYYY/MM/DD partitions as one date. #}
+        and partition_0 || partition_1 || partition_2 >= coalesce(
+            to_char(dateadd(day, -1, cast({{ cdc_watermark_value('orcabus_filemanager', 's3_object', 'position') }} as timestamp)), 'YYYYMMDD'),
+            '00000000'
         )
-        and _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
     {% endif %}
 
 ),

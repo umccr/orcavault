@@ -46,8 +46,8 @@ legacy_cleaned as (
 
 {# ============================================================ #}
 {# CDC BLOCK (daily incremental)                                #}
-{# Queries only differential records beyond the warehouse's     #}
-{# known horizon (max load_datetime from the Hub).              #}
+{# CDC queries only the records committed in this run's window, #}
+{# ie. cdc_bound, since the last complete run.                  #}
 {# ============================================================ #}
 
 cdc_source as (
@@ -61,10 +61,8 @@ with cdc_source as (
     select distinct
         instrument_run_id as sequencing_run_id,
         'orcabus_sequence_run_manager' as record_source
-    from {{ ref('cdc_srm_sequence') }}
-    {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
-    {% endif %}
+    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
+    where {{ cdc_bound('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
 
 ),
 

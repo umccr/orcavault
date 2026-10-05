@@ -22,19 +22,19 @@ with cdc_affected_keys as (
     from (
         select workflow_run_hk
         from {{ ref('sat_workflow_run_detail') }}
-        where {{ watermark_bound('load_datetime') }}
+        where {{ load_bound('load_datetime') }}
 
         union all
 
         select workflow_run_hk
         from {{ ref('sat_workflow_run_comment') }}
-        where {{ watermark_bound('load_datetime') }}
+        where {{ load_bound('load_datetime') }}
 
         union all
 
         select workflow_run_hk
         from {{ ref('sat_workflow_run_state') }}
-        where {{ watermark_bound('load_datetime') }}
+        where {{ load_bound('load_datetime') }}
     ) t
 
     {% else %}
@@ -64,9 +64,12 @@ cdc_detail_latest as (
         case when d.op = 'D' then 1 else 0 end as is_deleted
     from {{ ref('sat_workflow_run_detail') }} d
     inner join cdc_affected_keys ak on ak.workflow_run_hk = d.workflow_run_hk
+    {# The sat_workflow_run_detail re-reads the run events when its workflow definition changes, so
+       we need to consider load_datetime as well in case the commit time is the same to determine
+       the current definition. #}
     qualify row_number() over (
         partition by d.workflow_run_hk
-        order by d._dms_cdc_timestamp desc
+        order by d._dms_cdc_timestamp desc, d.load_datetime desc, d.hash_diff desc
     ) = 1
 
 ),

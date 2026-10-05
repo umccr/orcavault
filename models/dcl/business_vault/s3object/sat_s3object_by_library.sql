@@ -48,7 +48,7 @@ source as (
     from
         {{ ref('hub_s3object') }}
     {% if is_incremental() %}
-    where {{ watermark_bound('greatest(load_datetime, last_seen_datetime)') }}
+    where {{ load_bound('greatest(load_datetime, last_seen_datetime)') }}
     {% endif %}
 
 ),

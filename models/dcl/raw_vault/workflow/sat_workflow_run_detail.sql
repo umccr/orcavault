@@ -25,7 +25,8 @@ with wfl_lookup as (
         execution_engine    as workflow_execution_engine,
         execution_engine_pipeline_id as workflow_execution_engine_pipeline_id,
         validation_state    as workflow_validation_state,
-        code_version        as workflow_code_version
+        code_version        as workflow_code_version,
+        _dms_cdc_timestamp  as workflow_cdc_timestamp
     from (
         select
             *,
@@ -34,6 +35,7 @@ with wfl_lookup as (
                 order by _dms_cdc_timestamp desc
             ) as rn
         from {{ source('orcabus_workflow_manager', 'workflow_manager_workflow') }}
+        where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_workflow') }}
     ) t
     where rn = 1
 
@@ -65,8 +67,13 @@ source as (
         wfr._dms_cdc_timestamp
     from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }} wfr
         join wfl_lookup wfl on wfl.workflow_orcabus_id = wfr.workflow_id
+    where {{ cdc_upper_bound('orcabus_workflow_manager', 'workflow_manager_workflowrun', 'wfr._dms_cdc_timestamp') }}
     {% if is_incremental() %}
-    where wfr._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+      and (
+          {{ cdc_window('orcabus_workflow_manager', 'workflow_manager_workflowrun', 'wfr._dms_cdc_timestamp') }}
+          {# The current definition is required, so a changed definition reprocesses its runs. #}
+          or {{ cdc_window('orcabus_workflow_manager', 'workflow_manager_workflow', 'wfl.workflow_cdc_timestamp') }}
+      )
     {% endif %}
 
 ),

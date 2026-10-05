@@ -28,7 +28,7 @@ with incremental as (
     from
         {{ ref('sat_s3object_fm') }} h
     {% if is_incremental() %}
-    where {{ watermark_bound('load_datetime') }}
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),
