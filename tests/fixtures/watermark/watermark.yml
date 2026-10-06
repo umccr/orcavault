@@ -1,0 +1,101 @@
+# These are some unit tests for the CDC windows. They set the watermark with the `cdc_watermark_overrides` var
+# instead of reading `ops.cdc_watermark` to test behaviour.
+#
+# The window is 2026-10-05 00:00 to 01:00, so 2026-10-04 is before, 00:30 is in the window and 01:30 is after `pending`.
+# It's set once as `&window` in the first test, and the other tests reuse it with `*window`.
+#
+# The inputs are the `.sql` files next to this file.
+
+version: 2
+
+unit_tests:
+
+  - name: cdc_state_keeps_latest_visible_row
+    description: >
+      Tests that keys up to `pending` should be included.
+    model: int_cdc_mm_library
+    overrides:
+      vars:
+        cdc_watermark_overrides:
+          orcabus_metadata_manager.app_library: &window {position: '2026-10-05 00:00', pending: '2026-10-05 01:00'}
+    given:
+      - input: source('orcabus_metadata_manager', 'app_library')
+        format: sql
+        fixture: latest_visible_row__app_library
+    expect:
+      rows:
+        - {orcabus_id: lib_changed,     _dms_cdc_timestamp: '2026-10-05 00:30', cdc_changed: true}
+        - {orcabus_id: lib_unchanged,   _dms_cdc_timestamp: '2026-10-04 12:00', cdc_changed: false}
+        - {orcabus_id: lib_not_visible, _dms_cdc_timestamp: '2026-10-04 12:00', cdc_changed: false}
+        - {orcabus_id: lib_at_position, _dms_cdc_timestamp: '2026-10-05 00:00', cdc_changed: false}
+        - {orcabus_id: lib_at_pending,  _dms_cdc_timestamp: '2026-10-05 01:00', cdc_changed: true}
+
+  - name: state_finds_sequence_from_before_window
+    description: >
+      Tests that a new state finds a sequence committed before the window.
+    model: sat_sequencing_run_state
+    overrides:
+      macros:
+        is_incremental: true
+      vars:
+        cdc_watermark_overrides:
+          orcabus_sequence_run_manager.sequence_run_manager_sequence: *window
+          orcabus_sequence_run_manager.sequence_run_manager_state: *window
+    given:
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence')
+        format: sql
+        fixture: sequence_before_window__sequence
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_state')
+        format: sql
+        fixture: sequence_before_window__state
+      - input: this
+        format: sql
+        fixture: sequence_before_window__this
+    expect:
+      rows:
+        - {orcabus_id: new_state_old_seq, sequence_id: old_seq}
+        - {orcabus_id: old_state_new_seq, sequence_id: new_seq}
+
+  - name: filemanager_reads_from_day_before_position
+    description: >
+      Tests that the filemanager skips the date partitions correctly.
+    model: hub_s3object
+    overrides:
+      macros:
+        is_incremental: true
+      vars:
+        cdc_watermark_overrides:
+          orcabus_filemanager.s3_object: *window
+    given:
+      - input: source('orcabus_filemanager', 's3_object')
+        format: sql
+        fixture: filemanager_day_before__s3_object
+      - input: this
+        format: sql
+        fixture: filemanager_day_before__this
+    expect:
+      rows:
+        - {bucket: bucket, key: today}
+        - {bucket: bucket, key: previous_day}
+
+  - name: full_refresh_stops_at_pending
+    description: >
+      Tests that a full refresh reads everything before the window and nothing after `pending`.
+    model: hub_library
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        cdc_watermark_overrides:
+          orcabus_metadata_manager.app_library: *window
+    given:
+      - input: ref('spreadsheet__library_tracking_metadata')
+        format: sql
+        fixture: full_refresh__spreadsheet
+      - input: source('orcabus_metadata_manager', 'app_library')
+        format: sql
+        fixture: full_refresh__app_library
+    expect:
+      rows:
+        - {library_id: old_lib}
+        - {library_id: new_lib}

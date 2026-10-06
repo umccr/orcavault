@@ -4,17 +4,25 @@
     Get an `ops.cdc_watermark.<column>` value from the watermark table. This will check that the
     source has a `cdc` tag and error if it doesn't.
 
-    -#}
-    {%- if execute -%}
-        {%- set node = graph.sources.get('source.' ~ project_name ~ '.' ~ source_name ~ '.' ~ table_name) -%}
-        {%- if node is none or 'cdc' not in node.tags -%}
-            {{ exceptions.raise_compiler_error(
-                source_name ~ '.' ~ table_name ~ " has no CDC position: tag it 'cdc' in models/cdc/_sources.yml"
-            ) }}
-        {%- endif -%}
-    {%- endif -%}
+    Unit tests can't mock `ops.cdc_watermark`, so they set the values with the `cdc_watermark_overrides` var instead.
 
-    (select p.{{ column }} from ops.cdc_watermark p where p.source_id = '{{ source_name }}.{{ table_name }}')
+    -#}
+    {%- set overrides = var('cdc_watermark_overrides', none) -%}
+    {%- if overrides is not none -%}
+        {%- set value = overrides.get(source_name ~ '.' ~ table_name, {}).get(column) -%}
+        cast({{ "'" ~ value ~ "'" if value else 'null' }} as timestamptz)
+    {%- else -%}
+        {%- if execute -%}
+            {%- set node = graph.sources.get('source.' ~ project_name ~ '.' ~ source_name ~ '.' ~ table_name) -%}
+            {%- if node is none or 'cdc' not in node.tags -%}
+                {{ exceptions.raise_compiler_error(
+                    source_name ~ '.' ~ table_name ~ " has no CDC position: tag it 'cdc' in models/cdc/_sources.yml"
+                ) }}
+            {%- endif -%}
+        {%- endif -%}
+
+        (select p.{{ column }} from ops.cdc_watermark p where p.source_id = '{{ source_name }}.{{ table_name }}')
+    {%- endif -%}
 {%- endmacro %}
 
 

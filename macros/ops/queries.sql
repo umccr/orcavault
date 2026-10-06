@@ -14,7 +14,7 @@
         {{ return('') }}
     {% endif %}
 
-    {#- The tables which as a `cdc` tag in models/cdc/_sources.yml. -#}
+    {#- The tables which have a `cdc` tag in models/cdc/_sources.yml. -#}
     {% set sources = [] %}
     {% for node in graph.sources.values() | sort(attribute='unique_id') if 'cdc' in node.tags %}
         {% do sources.append(node) %}
@@ -108,9 +108,10 @@
         {{ return('') }}
     {% endif %}
 
+    {#- A table with no visible commits has a null `pending`, which should not clear its position. #}
     {% set promote %}
         update ops.cdc_watermark
-        set position   = pending,
+        set position   = coalesce(pending, position),
             updated_at = getdate()
         where pending_invocation_id = '{{ invocation_id }}'
     {% endset %}
