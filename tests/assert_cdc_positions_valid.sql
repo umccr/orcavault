@@ -1,6 +1,6 @@
 {#-
 
-The `ops.cdc_watermark.position` and `ops.cdc_watermark.pending` should should never be in the future.
+The `ops.cdc_watermark.position` and `ops.cdc_watermark.pending` should never be in the future.
 
 -#}
 

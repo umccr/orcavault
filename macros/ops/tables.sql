@@ -7,7 +7,7 @@
     table. `position` is the source commit time up to which every model has processed that table,
     and `pending` is where the current run will go to. The position moves forward once a run has
     processed everything up to `pending`, with the next run resuming from there. Both need to be
-    tracked because a model cannot reliably infer it's position from it's own rows, and the next
+    tracked because a model cannot reliably infer its position from its own rows, and the next
     run needs to know where to resume from, since otherwise it has no reference point.
 
     -#}
