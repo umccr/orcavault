@@ -90,7 +90,8 @@ final as (
     {% if is_incremental() %}
     where not exists (
         select 1 from {{ this }} t
-        where t.hash_diff = transformed.hash_diff
+        where t.library_hk = transformed.library_hk
+            and t.hash_diff = transformed.hash_diff
     )
     {% endif %}
 
