@@ -30,8 +30,9 @@ The main components are:
   `pending`, are the table's window. This window has the changes that earlier
   runs haven't processed.
 - At the end of a successful `dbt run` or `dbt build`, dbt moves each `position`
-  up to its `pending`. After any other run, the positions stay where they were.
-  Positions are updated all at once, and a single failure results in re-read.
+  up to a margin before its `pending`. After any other run, the positions stay
+  where they were. Positions are updated all at once, and a single failure
+  results in re-read.
 - Every incremental model already skips rows it has, either by merging on a key
   or by checking for the row's hash, so re-reading is harmless. The watermark is
   designed to avoid losing rows rather than over-reading.
@@ -62,13 +63,13 @@ This means that:
 `create_ops_tables` creates `ops.cdc_watermark` at the start of every dbt
 command:
 
-| column                  | meaning                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `source_id`             | The dbt source, i.e. `<source_name>.<table_name>`.                                                                 |
-| `position`              | The position every model has processed commits up to. Null means the next run reads from the start.                |
-| `pending`               | The newest visible commit time when the run started, up to a margin before then. The current run reads up to here. |
-| `pending_invocation_id` | The dbt invocation that set `pending`. This is used to update `position` later.                                    |
-| `updated_at`            | The update time of the last write.                                                                                 |
+| column                  | meaning                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `source_id`             | The dbt source, i.e. `<source_name>.<table_name>`.                                                  |
+| `position`              | The position every model has processed commits up to. Null means the next run reads from the start. |
+| `pending`               | The newest visible commit time when the run started. The current run reads up to here.              |
+| `pending_invocation_id` | The dbt invocation that set `pending`. This is used to update `position` later.                     |
+| `updated_at`            | The update time of the last write.                                                                  |
 
 There is one row for each source table tagged with `cdc` in
 `models/cdc/_sources.yml`. When a run finds a new table with the tag, it adds a
@@ -100,9 +101,9 @@ would hold back busier tables, resulting in more re-reading and longer runs.
 Storing `pending`, instead of reading up to the newest row is necessary
 primarily because:
 
-- The end of the run updates `position` to exactly where the models read up to.
-  If `position` was updated with the time at the end of the run, or with the
-  newest commit time, rows would be missed that arrived during the run that
+- The end of the run updates `position` based on where the models read up to. If
+  `position` was updated with the time at the end of the run, or with the newest
+  commit time at the end, rows would be missed that arrived during the run that
   weren't yet visible.
 
 It also has the added benefit of allowing every model in the run to read the
@@ -114,10 +115,10 @@ The `pending_invocation_id` stops any other runs from accidentally updating the
 `pending`, and ensures that only that `pending_invocation_id` can update that
 row.
 
-The `pending` value also a small margin added as a safety to catch any edge
-cases of ordering as DMS is writing the commit time. For example, one
-transaction could in theory be split across files, or many commits can share a
-timestamp. DMS writes files up to an hour apart, so the margin is 90 minutes.
+At the end of the run, `position` is set to a margin before `pending`, so the
+next run reads the last few minutes again. This catches rows committed before
+`pending` that weren't visible yet, such as a transaction split across two DMS
+files.
 
 ## The bound macros
 
@@ -247,7 +248,8 @@ time. The bound is strict, so give a time before the first row to reread.
    `s3_object`.
 2. Bound every read of the source with one of the macros above.
 3. Make the model skip rows it already has, by merging on a key or with a
-   `not exists` on the row's hash. Rereads happen after every incomplete run.
+   `not exists` on the row's hash. Every run re-reads the last few minutes, and
+   an incomplete run means the next one re-reads everything since `position`.
 4. Run `dbt test` where `assert_cdc_sources_bounded` should fail if a read is
    unbounded.
 
@@ -275,8 +277,9 @@ Consider the following if anything needs fixing:
 - Deleting the watermark table would have a similar effect to a full rebuild, as
   it would be recreated on the next run. This could be used as a way to
   reprocess every record without clearing the history.
-- Don't run dbt while DMS is doing a full load, e.g. after a "Reload target" or
-  "Reload table data". This could conflict with the margin on `position`.
+- Avoid running dbt while DMS is doing a full load, e.g. after a "Reload target"
+  or "Reload table data". Every reloaded row has the same commit time, so models
+  in one run can see different rows and tests can fail.
 - Avoid starting a run while another run is in progress. While
   `pending_invocation_id` will keep the CDC positions safe, the `load_bound`
   assumes that runs don't overlap.

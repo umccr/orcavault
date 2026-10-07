@@ -2,11 +2,10 @@
     {#-
 
     This macro updates `ops.cdc_watermark.pending` for each DMS source table for the beginning
-    of the run. Models will read this value to know from where they should do incremental loads.
-    This value is table's largest `_dms_cdc_timestamp`, and represents the next point that the
-    model will go from after this run is complete, capped at a margin before the current time to
-    prevent missing commits. It must be tracked from the beginning as otherwise the update won't
-    know where to go from next.
+    of the run. Models will read this value to know up to where they should do incremental loads.
+    This value is the table's largest `_dms_cdc_timestamp`, and the next run continues from a margin
+    before it after this run is complete. It must be tracked from the beginning as otherwise the
+    update won't know where to go from next.
 
     -#}
 
@@ -39,17 +38,11 @@
     {% set inserted = adapter.execute(insert_new, auto_begin=false)[0] %}
     {% do log('CDC positions inserted: ' ~ inserted.rows_affected, info=true) %}
 
-    {#- Then it is updated with the pending position. The margin is taken from the current time rather than
-        the newest commit, so a table that stops receiving commits still has its last commits read. -#}
+    {#- Then it is updated with the pending position, which is the newest visible commit. There is no margin
+        here, so a table that stops receiving commits still has its last commits read. -#}
     {% set update_pending %}
         update ops.cdc_watermark
-        set pending               = case
-                                        when newest_by_source.newest is not null
-                                        then least(
-                                            newest_by_source.newest,
-                                            dateadd(minute, -{{ var('cdc_pending_margin_minutes', 90) | int }}, getdate())
-                                        )
-                                    end,
+        set pending               = newest_by_source.newest,
             pending_invocation_id = '{{ invocation_id }}',
             updated_at            = getdate()
         from (
@@ -86,9 +79,10 @@
 {% macro update_source_positions(results) %}
     {#-
 
-    This macro updates the `ops.cdc_watermark.position` to the new `pending` value after the run
-    has successfully completed. This is the reference point for the next run, and is used to continue
-    incremental loads from.
+    This macro updates the `ops.cdc_watermark.position` to a margin before the new `pending` value
+    after the run has successfully completed. This is the reference point for the next run, and is
+    used to continue incremental loads from. The margin means the next run reads the last commits
+    again, which finds rows committed before `pending` that weren't visible yet.
 
     -#}
 
@@ -118,7 +112,10 @@
     {#- A table with no visible commits has a null `pending`, which should not clear its position. #}
     {% set promote %}
         update ops.cdc_watermark
-        set position   = coalesce(pending, position),
+        set position   = coalesce(
+                             dateadd(minute, -{{ var('cdc_position_margin_minutes', 10) | int }}, cast(pending as timestamp)),
+                             position
+                         ),
             updated_at = getdate()
         where pending_invocation_id = '{{ invocation_id }}'
     {% endset %}

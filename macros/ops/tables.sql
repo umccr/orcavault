@@ -6,9 +6,9 @@
     `ops.cdc_watermark` serves the function of a watermark table, and has one row per DMS source
     table. `position` is the source commit time up to which every model has processed that table,
     and `pending` is where the current run will go to. The position moves forward once a run has
-    processed everything up to `pending`, with the next run resuming from there. Both need to be
-    tracked because a model cannot reliably infer its position from its own rows, and the next
-    run needs to know where to resume from, since otherwise it has no reference point.
+    processed everything up to `pending`, with the next run resuming from a margin before it. Both
+    need to be tracked because a model cannot reliably infer its position from its own rows, and
+    the next run needs to know where to resume from, since otherwise it has no reference point.
 
     -#}
 
@@ -23,11 +23,11 @@
                 that has a `cdc` tag in models/cdc/_sources.yml. #}
             source_id             varchar(512) not null,
             {#- The source commit time up to which every model has processed the table. This is
-                the `pending` of the last complete run. #}
+                `cdc_position_margin_minutes` before the `pending` of the last complete run, so the
+                next run reads the last commits again. #}
             position              timestamptz,
-            {#- The maximum time which this run will ingest for, i.e,
-                `least(max(_dms_cdc_timestamp), getdate() − cdc_pending_margin_minutes)`.
-                Everything committed up to here is visible and this run will read up to it. #}
+            {#- The maximum time which this run will ingest for, i.e, `max(_dms_cdc_timestamp)`
+                when the run started. This run will read up to it. #}
             pending               timestamptz,
             {#- The dbt invocation that recorded `pending`. #}
             pending_invocation_id varchar(64),

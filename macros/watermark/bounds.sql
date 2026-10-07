@@ -47,9 +47,10 @@
 
     Strictly speaking, we don't have to have an upper bound to the window, as deduplication
     would take care of any records loaded more than once. However, it falls out conveniently
-    from having `pending`, and it means that successive runs have no overlap between rows.
-    This is important to prevent run failures that result in models where the dependency is
-    not visible yet for a row, causing a constraint error, such as with `sat_s3object_fm_current`.
+    from having `pending`, and it means that every model in a run reads the same rows. This
+    is important to prevent run failures that result in models where the dependency is not
+    visible yet for a row, causing a constraint error, such as with  `sat_s3object_fm_current`.
+    Windows can overlap by `cdc_position_margin_minutes`, which deduplication handles.
 
     -#}
     {%- set position = cdc_watermark_value(source_name, table_name, 'position') -%}
