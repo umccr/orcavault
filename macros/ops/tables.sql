@@ -25,7 +25,8 @@
             {#- The source commit time up to which every model has processed the table. This is
                 the `pending` of the last complete run. #}
             position              timestamptz,
-            {#- The maximum time which this run will ingest for, `max(_dms_cdc_timestamp) − cdc_pending_margin_minutes`.
+            {#- The maximum time which this run will ingest for, i.e,
+                `least(max(_dms_cdc_timestamp), getdate() − cdc_pending_margin_minutes)`.
                 Everything committed up to here is visible and this run will read up to it. #}
             pending               timestamptz,
             {#- The dbt invocation that recorded `pending`. #}

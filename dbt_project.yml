@@ -23,8 +23,9 @@ on-run-end:
   - "{{ update_source_positions(results) }}"
 
 vars:
-  # A margin for the `pending` value in `ops.cdc_watermark`.
-  cdc_pending_margin_minutes: 10
+  # A margin for the `pending` value in `ops.cdc_watermark`. This should be longer than the DMS
+  # `cdc_max_batch_interval`.
+  cdc_pending_margin_minutes: 90
 
 models:
   orcavault:

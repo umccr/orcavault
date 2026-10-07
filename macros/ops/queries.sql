@@ -4,9 +4,9 @@
     This macro updates `ops.cdc_watermark.pending` for each DMS source table for the beginning
     of the run. Models will read this value to know from where they should do incremental loads.
     This value is table's largest `_dms_cdc_timestamp`, and represents the next point that the
-    model will go from after this run is complete, minus a margin to prevent missing commits.
-    It must be tracked from the beginning as otherwise the update won't know where to go from
-    next.
+    model will go from after this run is complete, capped at a margin before the current time to
+    prevent missing commits. It must be tracked from the beginning as otherwise the update won't
+    know where to go from next.
 
     -#}
 
@@ -39,10 +39,17 @@
     {% set inserted = adapter.execute(insert_new, auto_begin=false)[0] %}
     {% do log('CDC positions inserted: ' ~ inserted.rows_affected, info=true) %}
 
-    {#- Then it is updated with the pending position. -#}
+    {#- Then it is updated with the pending position. The margin is taken from the current time rather than
+        the newest commit, so a table that stops receiving commits still has its last commits read. -#}
     {% set update_pending %}
         update ops.cdc_watermark
-        set pending               = dateadd(minute, -{{ var('cdc_pending_margin_minutes', 10) | int }}, newest_by_source.newest),
+        set pending               = case
+                                        when newest_by_source.newest is not null
+                                        then least(
+                                            newest_by_source.newest,
+                                            dateadd(minute, -{{ var('cdc_pending_margin_minutes', 90) | int }}, getdate())
+                                        )
+                                    end,
             pending_invocation_id = '{{ invocation_id }}',
             updated_at            = getdate()
         from (

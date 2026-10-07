@@ -14,12 +14,12 @@ The main components are:
 - [`macros/watermark/bounds.sql`](../macros/watermark/bounds.sql) filters rows
   that models use to incrementally load.
 - [`macros/watermark/int_cdc_state.sql`](../macros/watermark/int_cdc_state.sql)
-  creates some the current-state `int_cdc` models.
+  creates some of the current-state `int_cdc` models.
 
 ## The design
 
 - A model that reads a CDC source table filters on commit time, i.e. the
-  `_dsm_cdc_timestamp`. A model that reads another warehouse model filters on
+  `_dms_cdc_timestamp`. A model that reads another warehouse model filters on
   load time, i.e. the `load_datetime`. A filter doesn't compare one type of time
   with the other.
 - `ops.cdc_watermark` has one watermark for each CDC source table, called its
@@ -62,13 +62,13 @@ This means that:
 `create_ops_tables` creates `ops.cdc_watermark` at the start of every dbt
 command:
 
-| column                  | meaning                                                                                |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `source_id`             | The dbt source, i.e. `<source_name>.<table_name>`.                                     |
-| `position`              | The position the model has processed commits up to. Null means everything is read.     |
-| `pending`               | The newest visible commit time when the run started. The current run reads up to here. |
-| `pending_invocation_id` | The dbt invocation that set `pending`. This is used to update `position` later.        |
-| `updated_at`            | The update time of the last write.                                                     |
+| column                  | meaning                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `source_id`             | The dbt source, i.e. `<source_name>.<table_name>`.                                                                 |
+| `position`              | The position every model has processed commits up to. Null means the next run reads from the start.                |
+| `pending`               | The newest visible commit time when the run started, up to a margin before then. The current run reads up to here. |
+| `pending_invocation_id` | The dbt invocation that set `pending`. This is used to update `position` later.                                    |
+| `updated_at`            | The update time of the last write.                                                                                 |
 
 There is one row for each source table tagged with `cdc` in
 `models/cdc/_sources.yml`. When a run finds a new table with the tag, it adds a
@@ -85,8 +85,8 @@ in a convenient and centralised place.
 ### Why one row per source table
 
 A single row is used for each source table because when a row becomes visible,
-it depends on the source table, not on the model that reading it. Models reading
-from a source read up to the same `pending`, and after the run they have
+it depends on the source table, not on the model that is reading it. Models
+reading from a source read up to the same `pending`, and after the run they have
 processed rows up to this point. This means that the models don't need to carry
 any position state.
 
@@ -117,8 +117,7 @@ row.
 The `pending` value also a small margin added as a safety to catch any edge
 cases of ordering as DMS is writing the commit time. For example, one
 transaction could in theory be split across files, or many commits can share a
-timestamp. In practice this is unlikely to occur but the margin is added as it's
-low cost.
+timestamp. DMS writes files up to an hour apart, so the margin is 90 minutes.
 
 ## The bound macros
 
@@ -132,8 +131,8 @@ The models never read `ops.cdc_watermark` directly. They use these macros from
 | `cdc_bound(source, table)`       | `cdc_window` when incremental, otherwise `cdc_upper_bound`                           | A model reads one CDC table directly.                                         |
 | `load_bound()`                   | `load_datetime >` this model's `max(load_datetime)` when incremental, otherwise true | A model reads another warehouse model.                                        |
 
-Each `cdc_` macro takes an optional argument, which, the commit time expression,
-which is needed for table aliases, such `'stt._dms_cdc_timestamp'`.
+Each `cdc_` macro takes an optional argument, the commit time expression, which
+is needed for table aliases, such as `'stt._dms_cdc_timestamp'`.
 
 A null `position` in the table means no lower bound, and a null `pending` means
 no upper bound. For a build that isn't incremental, such as the first build, the
@@ -276,6 +275,8 @@ Consider the following if anything needs fixing:
 - Deleting the watermark table would have a similar effect to a full rebuild, as
   it would be recreated on the next run. This could be used as a way to
   reprocess every record without clearing the history.
-- Avoid starting a run while another run is doing. While `pending_invocation_id`
-  will keep the CDC positions safe, the `load_bound` assumes that runs don't
-  overlap.
+- Don't run dbt while DMS is doing a full load, e.g. after a "Reload target" or
+  "Reload table data". This could conflict with the margin on `position`.
+- Avoid starting a run while another run is in progress. While
+  `pending_invocation_id` will keep the CDC positions safe, the `load_bound`
+  assumes that runs don't overlap.
