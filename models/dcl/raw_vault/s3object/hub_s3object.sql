@@ -44,7 +44,8 @@ with source as (
 {# ============================================================ #}
 {# ACTIVE BLOCK (daily incremental)                             #}
 {# CDC queries only the records committed in this run's window, #}
-{# i.e. cdc_bound, since the last complete run.                 #}
+{# i.e. cdc_window, since the last complete run. A full load    #}
+{# reads every commit up to pending, i.e. cdc_upper_bound.      #}
 {#                                                              #}
 {# NOTE: This is the highest volume model in the warehouse.     #}
 {# The partition filter lets Spectrum skip every commit date    #}
@@ -58,13 +59,15 @@ with source as (
         "key",
         'orcabus_filemanager_s3_object' as record_source
     from {{ source('orcabus_filemanager', 's3_object') }}
-    where {{ cdc_bound('orcabus_filemanager', 's3_object') }}
     {% if is_incremental() %}
-      {# Compare the YYYY/MM/DD partitions as one date. #}
-      and partition_0 || partition_1 || partition_2 >= coalesce(
+    {# Compare the YYYY/MM/DD partitions as one date. #}
+    where partition_0 || partition_1 || partition_2 >= coalesce(
           to_char(dateadd(day, -1, cast({{ cdc_watermark_value('orcabus_filemanager', 's3_object', 'position') }} as timestamp)), 'YYYYMMDD'),
           '00000000'
       )
+      and {{ cdc_window('orcabus_filemanager', 's3_object') }}
+    {% else %}
+    where {{ cdc_upper_bound('orcabus_filemanager', 's3_object') }}
     {% endif %}
 
 ),
