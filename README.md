@@ -2,6 +2,8 @@
 
 For project documentation, please refer to https://github.com/umccr/orcahouse-doc
 
+For data warehouse issue tracking, please submit an issue to https://github.com/umccr/orcahouse-project/issues
+
 ## Development
 
 Create a Python virtual environment (any method) and install the dev toolchain [requirements](requirements.txt).
@@ -31,16 +33,17 @@ source dx.sh
 
 Make the house key and tunnel.
 ```
-houseRule
-houseKey
-houseHost
-houseTunnel
-houseStatus
+house_rule
+house_key
+house_host
+house_tunnel
+house_status
+house_nc
 ```
 
 Make the house credentials.
 ```
-houseCred
+house_cred
 ```
 
 Run the dbt debug command to check the connection.
