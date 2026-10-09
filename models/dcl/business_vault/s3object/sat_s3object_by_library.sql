@@ -48,8 +48,7 @@ source as (
     from
         {{ ref('hub_s3object') }}
     {% if is_incremental() %}
-    where
-        load_datetime > ( select coalesce(max(load_datetime), '1900-01-01') from {{ this }} )
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

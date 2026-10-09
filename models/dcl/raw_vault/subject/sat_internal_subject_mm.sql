@@ -17,9 +17,7 @@ with source as (
         op,
         _dms_cdc_timestamp
     from {{ source('orcabus_metadata_manager', 'app_individual') }}
-    {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
-    {% endif %}
+    where {{ cdc_bound('orcabus_metadata_manager', 'app_individual') }}
 
 ),
 

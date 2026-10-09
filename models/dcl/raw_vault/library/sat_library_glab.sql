@@ -25,7 +25,7 @@ with source as (
     where library_id is not null
       and library_id <> ''
     {% if is_incremental() %}
-      and load_datetime > (select max(load_datetime) from {{ this }})
+      and {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

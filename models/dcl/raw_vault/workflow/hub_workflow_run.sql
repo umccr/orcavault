@@ -39,8 +39,8 @@ legacy_cleaned as (
 {# ============================================================ #}
 {# ACTIVE BLOCK (daily incremental)                             #}
 {# Two active sources — CDC and MDM seed.                       #}
-{# CDC queries only differential records beyond the warehouse's #}
-{# known horizon (max load_datetime from the Hub).              #}
+{# CDC queries only the records committed in this run's window, #}
+{# i.e. cdc_bound, since the last complete run.                 #}
 {# MDM seed is small static dataset — full scan is acceptable.  #}
 {# ============================================================ #}
 
@@ -56,9 +56,7 @@ with cdc_source as (
         portal_run_id,
         'workflow_manager_workflowrun' as record_source
     from {{ source('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
-    {% if is_incremental() %}
-    where _dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
-    {% endif %}
+    where {{ cdc_bound('orcabus_workflow_manager', 'workflow_manager_workflowrun') }}
 
 ),
 

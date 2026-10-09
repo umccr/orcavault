@@ -10,10 +10,24 @@
 
 with seq_lookup as (
 
-    select distinct
+    {#
+
+    This lookup gets every sequence up to `pending`, not only those in this run's window.
+    A comment in the window can belong to a sequence committed in an earlier run,
+    and the inner join below would drop it if the lookup didn't have that sequence.
+
+    Its newest commit time lets the `cdc_window` reprocess a comment where the sequence
+    arrived after it, since the join would have dropped that comment otherwise.
+
+    #}
+
+    select
         orcabus_id,
-        instrument_run_id
+        instrument_run_id,
+        max(_dms_cdc_timestamp) as _dms_cdc_timestamp
     from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
+    where {{ cdc_upper_bound('orcabus_sequence_run_manager', 'sequence_run_manager_sequence') }}
+    group by orcabus_id, instrument_run_id
 
 ),
 
@@ -39,8 +53,12 @@ source as (
         cmt._dms_cdc_timestamp
     from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_comment') }} cmt
         join seq_lookup seq on seq.orcabus_id = cmt.target_id
+    where {{ cdc_upper_bound('orcabus_sequence_run_manager', 'sequence_run_manager_comment', 'cmt._dms_cdc_timestamp') }}
     {% if is_incremental() %}
-    where cmt._dms_cdc_timestamp > (select max(load_datetime) from {{ this }})
+      and (
+          {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_comment', 'cmt._dms_cdc_timestamp') }}
+          or {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_sequence', 'seq._dms_cdc_timestamp') }}
+      )
     {% endif %}
 
 ),

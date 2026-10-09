@@ -1,7 +1,10 @@
 {#
-    sat_s3object_fm uses the CDC datalake partition_0 || partition_1 || partition_2
-    to compare which partitions are newer. Test here that the partition values are
+
+    hub_s3object, sat_s3object_fm and the `pending` in update_source_pending read the
+    CDC datalake partition_0 || partition_1 || partition_2 as a YYYYMMDD commit date,
+    to skip reading partitions unnecessarily. Test here that the partition values are
     all valid, as this depends on the infra settings.
+
 #}
 select distinct partition_0, partition_1, partition_2
 from {{ source('orcabus_filemanager', 's3_object') }}

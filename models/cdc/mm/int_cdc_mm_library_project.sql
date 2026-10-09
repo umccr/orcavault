@@ -13,6 +13,11 @@ select * from (
             cast(lib._dms_cdc_timestamp as timestamptz),
             cast(prj._dms_cdc_timestamp as timestamptz)
         )                                               as association_date,
+        (
+            lib.cdc_changed
+            or lnk.cdc_changed
+            or prj.cdc_changed
+        )                                               as cdc_changed,
         'orcabus_metadata_manager'                      as record_source,
         row_number() over (
             partition by lib.library_id, prj.project_id

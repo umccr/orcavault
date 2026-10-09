@@ -17,7 +17,7 @@ with source as (
         record_source
     from {{ ref('hub_library') }}
     {% if is_incremental() %}
-    where load_datetime > (select max(load_datetime) from {{ this }})
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),

@@ -12,6 +12,7 @@ select * from (
             cast(assoc._dms_cdc_timestamp as timestamptz),
             cast(seq._dms_cdc_timestamp as timestamptz)
         )                                               as association_date,
+        (assoc.cdc_changed or seq.cdc_changed)          as cdc_changed,
         'orcabus_sequence_run_manager'                  as record_source,
         row_number() over (
             partition by assoc.library_id, seq.instrument_run_id

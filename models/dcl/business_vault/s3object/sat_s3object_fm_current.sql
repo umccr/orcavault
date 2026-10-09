@@ -28,8 +28,7 @@ with incremental as (
     from
         {{ ref('sat_s3object_fm') }} h
     {% if is_incremental() %}
-    where
-        h.load_datetime > ( select coalesce(max(load_datetime), '1900-01-01') from {{ this }} )
+    where {{ load_bound('load_datetime') }}
     {% endif %}
 
 ),
