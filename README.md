@@ -31,20 +31,13 @@ Source the [dx script](dx.sh). It exports shell functions (command shortcut) rel
 source dx.sh
 ```
 
-Make the house key and tunnel.
+Connect to the dev warehouse. This makes the house key, the hosts entry, the tunnel and the dbt credentials.
 ```
-house_rule
-house_key
-house_host
-house_tunnel
-house_status
-house_nc
+house_up
 ```
 
-Make the house credentials.
-```
-house_cred
-```
+Each step is also its own function: `house_key`, `house_host`, `house_tunnel`, `house_nc` and `house_cred`.
+`house_down` closes the tunnel and clears the credentials.
 
 Run the dbt debug command to check the connection.
 ```
@@ -59,6 +52,28 @@ You should expect to see a successful connection.
 
 07:22:47  All checks passed!
 ```
+
+## Personal schema
+
+You build in your own personal schema, named after your AWS SSO username, with a copy of each layer. For example,
+`marko.malenic@<domain>` builds in `dev_marko_malenic_dcl`. Run `house_schema` to see yours, or set `ORCAVAULT_SCHEMA`
+before `house_up` to pick another name, e.g. `export ORCAVAULT_SCHEMA=dev_marko`. The shared schemas belong to the
+daily run.
+
+It works like a git branch, with the dev daily run as its upstream. Any model you haven't built yourself comes
+from the dev daily run's tables, and there are two ways to sync with it:
+
+```
+dbt_defer                    # fetch what the dev daily run built, and rebuild your changes on top of it
+dbt_clone                    # the same, and also make a view of dev's table for every model you haven't changed
+dbt_status                   # what you've changed, and whether dev has run since you last synced
+dbt build -s hub_library+    # build your change and everything downstream of it
+dbt_drop                     # drop your personal schema once you're done with it
+```
+
+With `dbt_defer`, your schema only has your changes, and dbt reads everything else from dev. With `dbt_clone`, your
+schema has every model, so you can browse all of it in the Redshift query editor. Sync first, and again after each dev
+run. See [README_DEV.md](README_DEV.md#personal-schemas) for how it works.
 
 ## dbt
 
@@ -75,7 +90,8 @@ dbt run
 dbt test
 ```
 
-You can run a specific model by name.
+You can run a specific model by name. Prefer selecting what you've changed, as a `dbt build` with no selection
+builds every model from scratch into your personal schema.
 ```
 dbt run -s hub_sequencing_run
 ```

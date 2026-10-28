@@ -98,10 +98,62 @@ house_cred () {
   DBT_ENV_SECRET_HOST=$(house_endpoint)
   export DBT_ENV_SECRET_HOST
   export DBT_ENV_SECRET_USER="dbt" # pragma: allowlist secret
-  env | grep DBT
+  ORCAVAULT_SCHEMA=${ORCAVAULT_SCHEMA:-$(house_schema)} || return
+  export ORCAVAULT_SCHEMA
+  export DBT_DEFER=true DBT_STATE=target/upstream
+  env | grep -E 'DBT|ORCAVAULT'
+}
+
+house_schema () {
+  # dev_<your AWS SSO username>, e.g. .../AWSReservedSSO_<role>/marko.malenic@<domain> is dev_marko_malenic
+  local arn
+  arn=$(aws sts get-caller-identity --output text --query Arn) || return
+  echo "dev_${arn##*/}" | sed 's|@.*||' | tr -c 'a-zA-Z0-9\n' '_' | tr 'A-Z' 'a-z'
 }
 
 house_clean () {
-  unset DBT_ENV_SECRET_HOST DBT_ENV_SECRET_PASSWORD DBT_ENV_SECRET_USER
+  unset DBT_ENV_SECRET_HOST DBT_ENV_SECRET_PASSWORD DBT_ENV_SECRET_USER DBT_DEFER DBT_STATE
   env | grep DBT
+}
+
+house_up () {
+  house_key && house_host || return
+  house_status > /dev/null || house_tunnel || return
+  house_nc
+  house_cred
+}
+
+house_down () {
+  house_stop
+  house_clean
+}
+
+house_upstream () {
+  echo "s3://orcavault-run-dev-results-$(aws sts get-caller-identity --output text --query Account)-ap-southeast-2-an/state/manifest.json"
+}
+
+dbt_defer () {
+  # Fetch what the dev daily run built, then rebuild changes on top of it in your personal schema, reading the rest from dev.
+  aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
+    && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
+}
+
+dbt_clone () {
+  # Same as dbt_defer, after making a view of dev's table in your personal schema for every model you haven't changed.
+  aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
+    && dbt clone --exclude state:modified+ --state target/upstream --full-refresh \
+    && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
+}
+
+dbt_status () {
+  # Similar to git status: what you've changed since the last dbt_defer or dbt_clone, and whether dev has run since.
+  aws s3 cp --quiet "$(house_upstream)" target/upstream/latest.json \
+    && { cmp -s target/upstream/latest.json target/upstream/manifest.json \
+      || echo "dev has run since your last dbt_defer or dbt_clone, run one of them again before you build"; }
+  dbt ls --select state:modified+ --state target/upstream --resource-type model --resource-type seed "$@"
+}
+
+dbt_drop () {
+  # Similar to deleting a git branch: drop every schema of your personal schema. Preview with --args '{dry_run: true}'.
+  dbt run-operation drop_personal_schemas "$@"
 }

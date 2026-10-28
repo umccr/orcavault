@@ -12,6 +12,11 @@
 
     -#}
 
+    {#- A personal target reads the daily run's watermark and leaves it alone, see README_DEV.md. -#}
+    {% if is_personal_target() %}
+        {{ return('') }}
+    {% endif %}
+
     {% set create_schema %}
         create schema if not exists ops
     {% endset %}
