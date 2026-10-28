@@ -53,9 +53,11 @@ How it works:
   stops with `Could not find manifest in --state path`, as it does after `dbt clean`, which also removes it.
 - **Clone.** `dbt_clone` also makes a view of dev's table in your schema for each model you haven't changed, so
   your schema has every model, e.g. in the query editor. Redshift can't clone a table without copying its data, so
-  these are views, and late-binding ones, see [macros/clone.sql](macros/clone.sql). The daily run rebuilds a table
-  by renaming it and dropping it with `cascade`, which would also drop a normal view. The clone's `--full-refresh`
-  replaces what's already in your schema with views, such as a table from earlier work you're no longer changing.
+  dbt makes these views. A view is tied to the table it reads, and the daily run rebuilds a table model by renaming
+  it and dropping it with `cascade`, so the views of table models, mostly marts, disappear when dev runs. Incremental
+  models are updated in place, so their views stay, unless dev fully refreshes one. Run `dbt_clone` again after dev
+  has run to bring them back. The clone's `--full-refresh` replaces what's already in your schema with views, such as
+  a table from earlier work you're no longer changing.
 - **Keeping up with dev.** Dev's tables, and so the views and anything dbt defers to, change when the daily run
   finishes. Your own tables stay as they were when you built them. `dbt_status` says when dev has run since your
   last `dbt_defer` or `dbt_clone`. Run one of them again before you build, or the build mixes your older tables
@@ -72,10 +74,8 @@ How it works:
   arguments. See the
   [initial load](https://github.com/umccr/orcahouse/blob/main/infra/orcavault-run/docs/initial-load.md).
 - **Compute.** Everything you build counts towards the dev workgroup's monthly RPU-hour limit, which the daily run
-  shares, so build only what you need.
-- **Dropping.** `dbt_drop` drops every schema of your personal schema once you're done with it. Preview it with `dbt_drop --args '{dry_run: true}'`. It refuses to run against the daily run's
-  schemas, and only drops the schemas dbt builds for your `ORCAVAULT_SCHEMA`, so check that it's yours. Nothing
-  outside your schemas depends on them.
+  shares, so build only what you need. Drop your schemas once you're done with them, e.g.
+  `drop schema dev_marko_dcl cascade`.
 
 ## Skills
 

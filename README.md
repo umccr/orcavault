@@ -68,7 +68,6 @@ dbt_defer                    # fetch what the dev daily run built, and rebuild y
 dbt_clone                    # the same, and also make a view of dev's table for every model you haven't changed
 dbt_status                   # what you've changed, and whether dev has run since you last synced
 dbt build -s hub_library+    # build your change and everything downstream of it
-dbt_drop                     # drop your personal schema once you're done with it
 ```
 
 With `dbt_defer`, your schema only has your changes, and dbt reads everything else from dev. With `dbt_clone`, your

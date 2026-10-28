@@ -133,27 +133,22 @@ house_upstream () {
 }
 
 dbt_defer () {
-  # Fetch what the dev daily run built, then rebuild changes on top of it in your personal schema, reading the rest from dev.
+  # Fetch what the dev daily run built, then rebuild changes on top of it in your personal schema.
   aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
     && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
 }
 
 dbt_clone () {
-  # Same as dbt_defer, after making a view of dev's table in your personal schema for every model you haven't changed.
+  # Same as dbt_defer, except makes a view of the dev table in your personal schema.
   aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
     && dbt clone --exclude state:modified+ --state target/upstream --full-refresh \
     && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
 }
 
 dbt_status () {
-  # Similar to git status: what you've changed since the last dbt_defer or dbt_clone, and whether dev has run since.
+  # Similar to git status: what has been changed since the last dbt_defer or dbt_clone.
   aws s3 cp --quiet "$(house_upstream)" target/upstream/latest.json \
     && { cmp -s target/upstream/latest.json target/upstream/manifest.json \
       || echo "dev has run since your last dbt_defer or dbt_clone, run one of them again before you build"; }
   dbt ls --select state:modified+ --state target/upstream --resource-type model --resource-type seed "$@"
-}
-
-dbt_drop () {
-  # Similar to deleting a git branch: drop every schema of your personal schema. Preview with --args '{dry_run: true}'.
-  dbt run-operation drop_personal_schemas "$@"
 }
