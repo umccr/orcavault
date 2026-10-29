@@ -122,7 +122,7 @@ house_clean () {
 house_up () {
   house_key && house_host || return
   house_status > /dev/null || house_tunnel || return
-  house_nc
+  house_nc || return
   house_cred && house_check_sync
 }
 
