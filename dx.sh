@@ -27,7 +27,7 @@ house_host () {
   DOMAIN=$(house_endpoint)
 
   # Check if the entry already exists
-  if getent hosts "$DOMAIN" > /dev/null 2>&1; then
+  if house_check_host "$DOMAIN" > /dev/null; then
       echo "Entry for $DOMAIN already exists. Doing nothing."
   else
       echo "Entry for $DOMAIN not found. Adding to /etc/hosts..."
@@ -38,7 +38,8 @@ house_host () {
 }
 
 house_check_host () {
-  getent hosts "$(house_endpoint)"
+  # Print the /etc/hosts entry for the endpoint
+  grep -Fx "127.0.0.1 ${1:-$(house_endpoint)}" /etc/hosts
 }
 
 house_undo_host () {
@@ -46,12 +47,12 @@ house_undo_host () {
   DOMAIN=$(house_endpoint)
   ENTRY="$IP_ADDR $DOMAIN"
 
-  # Check for the exact line in /etc/hosts (ignoring trailing whitespace)
-  if grep -Fxq "$ENTRY" /etc/hosts; then
+  # Check for the exact line in /etc/hosts
+  if house_check_host "$DOMAIN" > /dev/null; then
       echo "Exact entry '$ENTRY' found. Removing it..."
 
-      # Use sed to delete the exact line and save the file in-place
-      sudo sed -i "\|#|!{s|^[[:space:]]*${IP_ADDR}[[:space:]]\+${DOMAIN}[[:space:]]*$||; /^$/d}" /etc/hosts
+      # Use sed to delete the exact line in-place
+      sudo sed -i.bak "/^${ENTRY}\$/d" /etc/hosts
 
       echo "Entry removed successfully."
   else
