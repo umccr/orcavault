@@ -13,6 +13,11 @@
         {{ return('') }}
     {% endif %}
 
+    {#- A personal target should not touch the watermarks, see README_DEV.md. -#}
+    {% if is_personal_target() %}
+        {{ return('') }}
+    {% endif %}
+
     {#- The tables which have a `cdc` tag in models/cdc/_sources.yml. -#}
     {% set sources = [] %}
     {% for node in graph.sources.values() | sort(attribute='unique_id') if 'cdc' in node.tags %}
@@ -89,6 +94,12 @@
     {% if not execute or flags.WHICH not in ['run', 'build'] %}
         {{ return('') }}
     {% endif %}
+
+    {#- A personal target reads the daily run's watermark and leaves it alone, see README_DEV.md. -#}
+    {% if is_personal_target() %}
+        {{ return('') }}
+    {% endif %}
+
     {#- Also need to omit legacy and empty runs otherwise the position would incorrectly go forward. #}
     {% if var('load_legacy', false) or invocation_args_dict.get('empty') %}
         {{ return('') }}

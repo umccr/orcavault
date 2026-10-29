@@ -7,7 +7,7 @@ orcavault:
       user: "{{ env_var('DBT_ENV_SECRET_USER') }}"
       port: 5439
       database: orcavault
-      schema: public
+      schema: "{{ env_var('ORCAVAULT_SCHEMA') }}"
       region: ap-southeast-2
       threads: 4
       ra3_node: true

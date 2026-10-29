@@ -16,42 +16,41 @@ make install
 make check
 ```
 
-We need an authenticated AWS session as we are developing against the remote OrcaVault dev environment. 
+We need an authenticated AWS session as we are developing against the remote OrcaVault dev environment.
 
 Use your usual AWS CLI setup to authenticate.
 
 For example:
+
 ```
 export AWS_PROFILE=unimelb-warehouse-prod-poweruser
 aws sso login
 ```
 
-Source the [dx script](dx.sh). It exports shell functions (command shortcut) related to the remote OrcaVault dev environment.
+Source the [dx script](dx.sh). It exports shell functions (command shortcut) related to the remote OrcaVault dev
+environment.
+
 ```
 source dx.sh
 ```
 
-Make the house key and tunnel.
+Connect to the dev warehouse. This makes the house key, the hosts entry, the tunnel and the dbt credentials.
+
 ```
-house_rule
-house_key
-house_host
-house_tunnel
-house_status
-house_nc
+house_up
 ```
 
-Make the house credentials.
-```
-house_cred
-```
+Each step is also its own function: `house_key`, `house_host`, `house_tunnel`, `house_nc` and `house_cred`. `house_down`
+closes the tunnel and clears the credentials.
 
 Run the dbt debug command to check the connection.
+
 ```
 dbt debug
 ```
 
 You should expect to see a successful connection.
+
 ```
 <...>
 07:22:44  Registered adapter: redshift=1.10.1
@@ -59,6 +58,16 @@ You should expect to see a successful connection.
 
 07:22:47  All checks passed!
 ```
+
+## Personal schema
+
+Building in your own personal schema is the preferred workflow. It's named after your AWS SSO username by default, run
+`house_schema` to see yours, or set `ORCAVAULT_SCHEMA` to pick another name. It works like a diff over the dev daily
+run, which you sync with using `dbt_defer` or `dbt_clone` before building. See
+[README_DEV.md](README_DEV.md#personal-schemas) for setup and instructions.
+
+If you want to opt out of personal schemas, run `house_shared` after `house_up` to go back to the original workflow
+using the shared dev schema, in which case the [dbt](#dbt) section below applies.
 
 ## dbt
 
@@ -76,21 +85,22 @@ dbt test
 ```
 
 You can run a specific model by name.
+
 ```
 dbt run -s hub_sequencing_run
 ```
 
-Running the incremental model won't be updated upon the consecutive run. 
-You can pass `--full-refresh` flag to reload from the beginning all over again.
-BUT. Doing so will lose the model's historical `load_datetime` history.
+Running the incremental model won't be updated upon the consecutive run. You can pass `--full-refresh` flag to reload
+from the beginning all over again. BUT. Doing so will lose the model's historical `load_datetime` history.
+
 ```
 dbt run -s hub_sequencing_run --full-refresh
 ```
 
-The append-only ICA usage models ignore a project-wide `--full-refresh`, so a routine full refresh of the
-project cannot silently discard their load history. A column added to a model's SQL is applied to the
-existing table in place with `on_schema_change: append_new_columns`, so widening these models never needs a
-rebuild. Rebuild them only when you mean it, naming them explicitly:
+The append-only ICA usage models ignore a project-wide `--full-refresh`, so a routine full refresh of the project cannot
+silently discard their load history. A column added to a model's SQL is applied to the existing table in place with
+`on_schema_change: append_new_columns`, so widening these models never needs a rebuild. Rebuild them only when you mean
+it, naming them explicitly:
 
 ```
 dbt run -s spreadsheet__ica_usage_report sat_workflow_run_ica_usage --vars '{ica_usage_full_refresh: true}'
@@ -100,10 +110,10 @@ This is lossless only while `tsa.spreadsheet__ica_usage_report` still carries ev
 
 ## Redshift
 
-* Login to the Data Warehouse AWS account console using `AWSPowerUserAccess` role.
-* Navigate to the Redshift QueryEditor v2.
-* Select the `Serverless: orcahouse-dev` warehouse for development.
-* On the connection prompt,
-  * Select `Federated User`
-  * Enter `orcavault` at database name
-  * Click `Create Connection` button
+- Login to the Data Warehouse AWS account console using `AWSPowerUserAccess` role.
+- Navigate to the Redshift QueryEditor v2.
+- Select the `Serverless: orcahouse-dev` warehouse for development.
+- On the connection prompt,
+  - Select `Federated User`
+  - Enter `orcavault` at database name
+  - Click `Create Connection` button

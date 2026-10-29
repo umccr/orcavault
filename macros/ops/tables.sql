@@ -12,6 +12,11 @@
 
     -#}
 
+    {#- A personal target should not touch the watermarks, see README_DEV.md. -#}
+    {% if is_personal_target() %}
+        {{ return('') }}
+    {% endif %}
+
     {% set create_schema %}
         create schema if not exists ops
     {% endset %}

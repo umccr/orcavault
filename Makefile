@@ -16,7 +16,7 @@ baseline:
 	@detect-secrets scan --exclude-files '^(.venv/|.local/|.terraform/|terraform.tfstate.d/|dbt_packages/|logs/)|package-lock.yml' > .secrets.baseline
 
 docs:
-	@dbt docs generate && python3 mask_docs.py
+	@ORCAVAULT_SCHEMA=public dbt docs generate --no-defer && python3 mask_docs.py
 
 serve:
 	@dbt docs serve
