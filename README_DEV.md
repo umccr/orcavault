@@ -26,56 +26,58 @@ Use your usual way of AWS CLI setup to authenticate. Manage and switch authentic
 
 ## Personal schemas
 
-Each developer builds OrcaVault in their own personal schemas, so nobody overwrites the shared dev tables or
-another developer's work. The shared schemas, `psa`, `dcl`, `mart` and `seed`, are only built by the daily run in
+Each developer is encouraged to build OrcaVault in their own personal schemas, so nobody overwrites the shared dev
+tables or another dev's work. The shared schemas are built by the daily run in
 [orcahouse/infra/orcavault-run](https://github.com/umccr/orcahouse/tree/main/infra/orcavault-run). The workflow
-borrows its language from git:
+to use a personal schema is:
 
-| git           | OrcaVault                                                                    |
-|---------------|------------------------------------------------------------------------------|
-| `origin/main` | The tables the dev daily run built, e.g. `dcl.hub_library`.                  |
-| your branch   | Your personal schemas, e.g. `dev_marko_dcl.hub_library`.                     |
-| `git fetch`   | Download the dev daily run's dbt manifest to `target/upstream`.              |
-| `git pull`    | `dbt_defer` or `dbt_clone`, which fetch, then rebuild your changes on top.   |
-| `git status`  | `dbt_status`, your changes compared to dev, and whether dev has run since.   |
+| Command       | Description                                                                                                                                                                           |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `house_up`    | Connect to the dev warehouse and set the name of the personal schema. This defaults to `dev_firstname_lastname` from the AWS SSO user.                                                |
+| `dbt_defer`   | Download the dev daily run manifest, then build any changes for the current personal schema. This is like a diff over dev of your local.                                              |
+| `dbt_clone`   | Download the dev daily run manifest, then make a view of the dev tables in your personal schema for unchanged models. This is like a live view of dev plus the changes of your local. |
+| `dbt_status`  | Lists what has changed compared to dev.                                                                                                                                               |
+| `house_down`  | Close the tunnel and clear the credentials.                                                                                                                                           |
 
-How it works:
+The `dx.sh` script sets `ORCAVAULT_SCHEMA` inside `house_cred`, which is a schema derived from the AWS SSO username. Then
+when calling `dbt_defer` or `dbt_clone`, the schema is updated or created on Redshift. By default, all `dbt` commands
+have `DBT_DEFER=true` set which allows the personal schema to function, as it instructs dbt to look at the personal schema 
+if the model is there and fall back to the dev schema for anything that isn't present. The dev state is
+downloaded locally from an S3 bucket which the daily run schedule uploads. When developing, either `dbt_defer`
+or `dbt_clone` should be run first to download the state that dbt needs, and to keep it up to date. The state changes
+once a day, so this should be done regularly, `dbt_status` will tell you if it's out of sync with dev.
 
-- **Schemas.** `house_cred` sets `ORCAVAULT_SCHEMA`, the target schema in [profiles.yml](profiles.yml), from your
-  AWS SSO username unless you've already set it. Everyone connects to Redshift as the same PowerUser database
-  user, so the SSO username is what tells developers' schemas apart. The
-  [generate_schema_name](macros/generate_schema_name.sql) macro prefixes each layer's schema with it, such as
-  `dev_marko_dcl`. The daily run uses the target schema `public`, which builds the shared schemas instead.
-- **Defer.** After every run, the daily run writes its dbt manifest to `state/manifest.json` in its results
-  bucket, which `dbt_defer` and `dbt_clone` download. `house_cred` sets `DBT_DEFER` and `DBT_STATE`, so dbt reads
-  any model you haven't built in your personal schema from the dev table, see
-  [defer](https://docs.getdbt.com/reference/node-selection/defer). Until the first `dbt_defer` or `dbt_clone`, dbt
-  stops with `Could not find manifest in --state path`, as it does after `dbt clean`, which also removes it.
-- **Clone.** `dbt_clone` also makes a view of dev's table in your schema for each model you haven't changed, so
-  your schema has every model, e.g. in the query editor. Redshift can't clone a table without copying its data, so
-  dbt makes these views. A view is tied to the table it reads, and the daily run rebuilds a table model by renaming
-  it and dropping it with `cascade`, so the views of table models, mostly marts, disappear when dev runs. Incremental
-  models are updated in place, so their views stay, unless dev fully refreshes one. Run `dbt_clone` again after dev
-  has run to bring them back. The clone's `--full-refresh` replaces what's already in your schema with views, such as
-  a table from earlier work you're no longer changing.
-- **Keeping up with dev.** Dev's tables, and so the views and anything dbt defers to, change when the daily run
-  finishes. Your own tables stay as they were when you built them. `dbt_status` says when dev has run since your
-  last `dbt_defer` or `dbt_clone`. Run one of them again before you build, or the build mixes your older tables
-  with dev's newer ones.
-- **Watermark.** A personal build reads the daily run's `ops.cdc_watermark` and never writes it. Your models load
-  CDC commits up to the same point as the dev tables they read from.
-- **Full refresh.** `dbt_defer` and `dbt_clone` rebuild your changes with `--full-refresh`, and other builds don't
-  unless you pass it. Between runs, the watermark's window only covers the last `cdc_position_margin_minutes` of the
-  last run. After dev has run, an incremental build of a model in your schema misses everything between your last
-  build and that window, without an error. To test a model's incremental path, build it again without
-  `--full-refresh` before dev runs again.
-- **Legacy sources.** A model rebuilt in your schema only reads its legacy sources with
-  `--vars '{load_legacy: true}'`, which `dbt_defer` and `dbt_clone` pass on to their build, along with any other
-  arguments. See the
-  [initial load](https://github.com/umccr/orcahouse/blob/main/infra/orcavault-run/docs/initial-load.md).
-- **Compute.** Everything you build counts towards the dev workgroup's monthly RPU-hour limit, which the daily run
-  shares, so build only what you need. Drop your schemas once you're done with them, e.g.
-  `drop schema dev_marko_dcl cascade`.
+The difference between `dbt_defer` and `dbt_clone` is the following:
+
+- **`dbt_defer`** will effectively compute the difference between your local changes and dev, and place that difference
+  into your personal schema. It does this by reading every model you haven't changed from dev directly and 
+  building the changes into your personal schema. On Redshift, you would see only the tables that have changed in your
+  schema, plus everything downstream, and anything else will be fetched from dev.
+- **`dbt_clone`** will create a live view of all unchanged models from dev inside your personal schema, and then place your changes
+  on top of that. This won't actually clone any data, it will just link the views. On Redshift, you would see all of the
+  dev tables plus any of your changes.
+
+Both of these will sync the manifest from the S3 bucket so that your clone or deferral doesn't drift from what's 
+available on dev. They also both use `--full-refresh` as it's what allows
+a change to apply to all rows when compared to the dev copy, which is likely the desired workflow for testing out a change.
+
+These commands should be considered "sync" style commands with the dev state. A typical workflow might look like the
+following:
+
+* Start with a sync, i.e. run `dbt_defer` or `dbt_clone` once a day to keep your personal schema up to date with dev.
+* While working on a model or making a change, execute normal `dbt` commands:
+    * For example, if you've edited [`sat_sequencing_run_state.sql`](models/dcl/raw_vault/sequencing/sat_sequencing_run_state.sql), you might run
+      `dbt build -s sat_sequencing_run_state+ -f` to apply the changes.
+    * Generally you will want to use `--full-refresh` for personal schemas so that all rows are updated with local
+      changes, because otherwise not much will have changed in comparison to dev which is running on a regular schedule. 
+* If you want to rebuild all changes at once, run `dbt_defer` or `dbt_clone` again. 
+
+These two commands don't necessarily conflict with each other and can be used interchangeably depending on the desired
+output. If you run `dbt_defer` after a `dbt_clone` the views won't be deleted, but if you run `dbt_clone` after `dbt_defer`
+unchanged tables will be replaced with views.
+
+If you'd like to opt out of this personal schema workflow and use the shared dev schema anyway, run `house_shared` after
+running `house_up`.
 
 ## Skills
 

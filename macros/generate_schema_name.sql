@@ -2,8 +2,8 @@
 
     {#-
 
-    The daily run builds into the shared schemas, e.g. `dcl`. A personal target builds into its own
-    copy of each one, prefixed with the target schema, e.g. `dev_marko_dcl`, see README_DEV.md.
+    Generate the schema name to use. The daily runs build into shared schemas, and personal targets
+    build into a copy of these with a prefix.
 
     -#}
 
@@ -27,7 +27,12 @@
 
 {% macro is_personal_target() -%}
 
-    {#- The daily run uses the `public` target schema, and any other is a developer's personal schema. -#}
+    {#-
+
+    Determine whether this is a target with a personal schema.
+
+    -#}
+
     {{ return(target.schema != 'public') }}
 
 {%- endmacro %}

@@ -7,7 +7,6 @@ orcavault:
       user: "{{ env_var('DBT_ENV_SECRET_USER') }}"
       port: 5439
       database: orcavault
-      # Your personal schema, which house_cred in dx.sh sets, see README_DEV.md.
       schema: "{{ env_var('ORCAVAULT_SCHEMA') }}"
       region: ap-southeast-2
       threads: 4

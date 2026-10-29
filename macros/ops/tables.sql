@@ -12,7 +12,7 @@
 
     -#}
 
-    {#- A personal target reads the daily run's watermark and leaves it alone, see README_DEV.md. -#}
+    {#- A personal target should not touch the watermarks, see README_DEV.md. -#}
     {% if is_personal_target() %}
         {{ return('') }}
     {% endif %}

@@ -98,17 +98,20 @@ house_cred () {
   DBT_ENV_SECRET_HOST=$(house_endpoint)
   export DBT_ENV_SECRET_HOST
   export DBT_ENV_SECRET_USER="dbt" # pragma: allowlist secret
+
   ORCAVAULT_SCHEMA=${ORCAVAULT_SCHEMA:-$(house_schema)} || return
   export ORCAVAULT_SCHEMA
-  export DBT_DEFER=true DBT_STATE=target/upstream
+  export DBT_DEFER=true
+  export DBT_STATE=target/upstream
+
   env | grep -E 'DBT|ORCAVAULT'
 }
 
 house_schema () {
-  # dev_<your AWS SSO username>, e.g. .../AWSReservedSSO_<role>/marko.malenic@<domain> is dev_marko_malenic
+  # dev_<AWS SSO username>, e.g. .../AWSReservedSSO_<role>/firstname.lastname@<domain> is dev_firstname_lastname
   local arn
   arn=$(aws sts get-caller-identity --output text --query Arn) || return
-  echo "dev_${arn##*/}" | sed 's|@.*||' | tr -c 'a-zA-Z0-9\n' '_' | tr 'A-Z' 'a-z'
+  echo "dev_${arn##*/}" | sed 's|@.*||; s|[^a-zA-Z0-9]|_|g' | tr 'A-Z' 'a-z'
 }
 
 house_clean () {
@@ -120,7 +123,7 @@ house_up () {
   house_key && house_host || return
   house_status > /dev/null || house_tunnel || return
   house_nc
-  house_cred
+  house_cred && house_check_sync
 }
 
 house_down () {
@@ -128,27 +131,59 @@ house_down () {
   house_clean
 }
 
+house_shared () {
+  # Opt out of the personal schema and build directly into the shared dev schemas. Run this after house_up.
+  export ORCAVAULT_SCHEMA=public
+  unset DBT_DEFER DBT_STATE
+  env | grep -E 'DBT|ORCAVAULT'
+}
+
 house_upstream () {
   echo "s3://orcavault-run-dev-results-$(aws sts get-caller-identity --output text --query Account)-ap-southeast-2-an/state/manifest.json"
 }
 
+house_fetch () {
+  # Download the manifest of what the dev daily run built.
+  aws s3 cp "$(house_upstream)" "${1:-target/upstream/manifest.json}"
+}
+
+house_check_sync () {
+  # Warn if there hasn't a sync with dev recently.
+  if [ ! -f target/upstream/manifest.json ]; then
+    echo "not synced with dev yet, run dbt_defer or dbt_clone"
+    return
+  fi
+
+  if ! house_fetch target/upstream/latest.json > /dev/null; then
+    return 0
+  fi
+
+  if ! cmp -s target/upstream/latest.json target/upstream/manifest.json; then
+    echo "dev has run since the last dbt_defer or dbt_clone, run one of them again before building"
+  fi
+}
+
+dbt_rebuild () {
+  # Rebuild changes, and everything downstream in your personal schema. Full refresh should be used here
+  # because we want to test a logic change, which should apply to all rows, not just the most recent.
+  dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
+}
+
 dbt_defer () {
-  # Fetch what the dev daily run built, then rebuild changes on top of it in your personal schema.
-  aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
-    && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
+  # Fetch what the dev daily run built, then rebuild changes on top in your personal schema.
+  house_fetch && dbt_rebuild "$@"
 }
 
 dbt_clone () {
-  # Same as dbt_defer, except makes a view of the dev table in your personal schema.
-  aws s3 cp "$(house_upstream)" target/upstream/manifest.json \
+  # Same as dbt_defer, except makes a view of the dev table in your personal schema. Full refresh
+  # should be used to force recreating everything and match what is on dev.
+  house_fetch \
     && dbt clone --exclude state:modified+ --state target/upstream --full-refresh \
-    && dbt build --select state:modified+ --defer --favor-state --state target/upstream --full-refresh "$@"
+    && dbt_rebuild "$@"
 }
 
 dbt_status () {
-  # Similar to git status: what has been changed since the last dbt_defer or dbt_clone.
-  aws s3 cp --quiet "$(house_upstream)" target/upstream/latest.json \
-    && { cmp -s target/upstream/latest.json target/upstream/manifest.json \
-      || echo "dev has run since your last dbt_defer or dbt_clone, run one of them again before you build"; }
+  # Check what has been changed since the last dbt_defer or dbt_clone.
+  house_check_sync
   dbt ls --select state:modified+ --state target/upstream --resource-type model --resource-type seed "$@"
 }
