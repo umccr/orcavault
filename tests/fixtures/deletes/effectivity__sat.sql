@@ -12,6 +12,9 @@ from (
     union all select 'hk_replaced',       'assoc_old',     'I', '2026-10-01 00:00'
     union all select 'hk_replaced',       'assoc_old',     'D', '2026-10-02 00:00'
     union all select 'hk_replaced',       'assoc_new',     'I', '2026-10-02 00:00'
+    union all select 'hk_shared',         'assoc_seq_x',   'I', '2026-10-01 00:00'
+    union all select 'hk_shared',         'assoc_seq_y',   'I', '2026-10-02 00:00'
+    union all select 'hk_shared',         'assoc_seq_x',   'D', '2026-10-03 00:00'
     union all select 'hk_legacy_deleted', 'assoc_legacy',  'I', '2026-10-01 00:00'
     union all select 'hk_legacy_deleted', 'assoc_legacy',  'D', '2026-10-02 00:00'
 ) changes

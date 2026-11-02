@@ -52,7 +52,7 @@ unit_tests:
 
   - name: effsat_ends_deleted_links
     description: >
-      Tests that a link from the sequence run manager is effective until its association is deleted.
+      Tests that a link from the sequence run manager is effective until its last association is deleted.
     model: effsat_library_sequencing_run
     overrides:
       macros:
@@ -77,12 +77,14 @@ unit_tests:
         - {library_sequencing_run_hk: hk_recreated,      library_id: L_RECREATED,      sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-02 00:00:00', is_current: 0}
         - {library_sequencing_run_hk: hk_recreated,      library_id: L_RECREATED,      sequencing_run_id: RUN_A,   effective_from: '2026-10-03 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
         - {library_sequencing_run_hk: hk_replaced,       library_id: L_REPLACED,       sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_shared,         library_id: L_SHARED,         sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_no_assoc,       library_id: L_NO_ASSOC,       sequencing_run_id: RUN_A,   effective_from: '2026-10-01 01:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
         - {library_sequencing_run_hk: hk_legacy,         library_id: L_LEGACY,         sequencing_run_id: RUN_OLD, effective_from: '2026-09-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
         - {library_sequencing_run_hk: hk_legacy_deleted, library_id: L_LEGACY_DELETED, sequencing_run_id: RUN_A,   effective_from: '2026-09-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
 
   - name: effsat_closes_the_current_row
     description: >
-      Tests that a delete since the last run is closed.
+      Tests that a delete since the last run closes the current row, and keeps its `load_datetime`.
     model: effsat_library_sequencing_run
     overrides:
       macros:
@@ -105,5 +107,4 @@ unit_tests:
         fixture: closes_current__this
     expect:
       rows:
-        - {library_sequencing_run_hk: hk_deleted, effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-05 00:30:00', is_current: 0}
-        - {library_sequencing_run_hk: hk_new,     effective_from: '2026-10-05 00:30:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_deleted, load_datetime: '2026-10-01 01:00:00', effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-05 00:30:00', is_current: 0}
