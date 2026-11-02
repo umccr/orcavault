@@ -80,14 +80,19 @@ unit_tests:
 
   - name: full_refresh_stops_at_pending
     description: >
-      Tests that a full refresh reads everything before the window and nothing after `pending`.
+      Tests that a full refresh reads everything before the window and nothing after `pending`, from both the
+      metadata manager and the sequence run manager. A library in both keeps the metadata manager as its source,
+      and a library stays after its association is deleted.
     model: hub_library
     overrides:
       macros:
         is_incremental: false
       vars:
+        # The active sources only, even when the run loads legacy.
+        load_legacy: false
         cdc_watermark_overrides:
           orcabus_metadata_manager.app_library: *window
+          orcabus_sequence_run_manager.sequence_run_manager_libraryassociation: *window
     given:
       - input: ref('spreadsheet__library_tracking_metadata')
         format: sql
@@ -95,7 +100,11 @@ unit_tests:
       - input: source('orcabus_metadata_manager', 'app_library')
         format: sql
         fixture: full_refresh__app_library
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation')
+        format: sql
+        fixture: full_refresh__libraryassociation
     expect:
       rows:
-        - {library_id: old_lib}
-        - {library_id: new_lib}
+        - {library_id: old_lib, record_source: orcabus_metadata_manager}
+        - {library_id: new_lib, record_source: orcabus_metadata_manager}
+        - {library_id: srm_lib, record_source: orcabus_sequence_run_manager}

@@ -31,25 +31,50 @@ with seq_lookup as (
 
 ),
 
+assoc as (
+
+    {#
+
+    This block is needed to fill in the associated rows from DMS which don't come with all fields. A delete has no library
+    and sequence, so they need to be copied over from a previous row. This computes deletes over the whole history rather than
+    just one row `sequence_run_manager_libraryassociation`. Using sequence_run_manager_libraryassociation directly wouldn't
+    work because the delete would be removed by the join, and filtering to the run's window first would remove the
+    earlier row it needs.
+
+    #}
+
+    select
+        orcabus_id,
+        association_date,
+        status,
+        sequence_id,
+        op,
+        _dms_cdc_timestamp,
+        {{ cdc_fill_delete('library_id') }}     as filled_library_id,
+        {{ cdc_fill_delete('sequence_id') }}    as filled_sequence_id
+    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }}
+    where {{ cdc_upper_bound('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }}
+
+),
+
 cdc as (
 
     select
-        seq.instrument_run_id   as sequencing_run_id,
-        assoc.library_id        as library_id,
-        assoc.orcabus_id        as orcabus_id,
-        assoc.association_date  as association_date,
-        assoc.status            as status,
-        assoc.sequence_id       as sequence_id,
+        seq.instrument_run_id       as sequencing_run_id,
+        assoc.filled_library_id     as library_id,
+        assoc.orcabus_id            as orcabus_id,
+        assoc.association_date      as association_date,
+        assoc.status                as status,
+        assoc.sequence_id           as sequence_id,
         assoc.op,
         assoc._dms_cdc_timestamp
-    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }} assoc
-        join seq_lookup seq on seq.orcabus_id = assoc.sequence_id
-    where {{ cdc_upper_bound('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation', 'assoc._dms_cdc_timestamp') }}
+    from assoc
+        join seq_lookup seq on seq.orcabus_id = assoc.filled_sequence_id
     {% if is_incremental() %}
-      and (
-          {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation', 'assoc._dms_cdc_timestamp') }}
-          or {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_sequence', 'seq._dms_cdc_timestamp') }}
-      )
+    where (
+        {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation', 'assoc._dms_cdc_timestamp') }}
+        or {{ cdc_window('orcabus_sequence_run_manager', 'sequence_run_manager_sequence', 'seq._dms_cdc_timestamp') }}
+    )
     {% endif %}
 
 ),

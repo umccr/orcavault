@@ -21,6 +21,7 @@ wfm_unique_libraries as (
 srm_unique_libraries as (
 
     select distinct library_id from {{ ref('int_cdc_srm_libraryassociation') }}
+    where op <> 'D'
 
 ),
 

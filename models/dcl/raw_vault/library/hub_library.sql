@@ -19,6 +19,7 @@
 {#   > spreadsheet__google_lims                                 #}
 {#   > data_portal_labmetadata > data_portal_limsrow            #}
 {#   > orcabus_metadata_manager                                 #}
+{#   > orcabus_sequence_run_manager                             #}
 {# ============================================================ #}
 
 {% if var('load_legacy', false) %}
@@ -43,7 +44,8 @@ legacy_cleaned as (
 
 {# ============================================================ #}
 {# ACTIVE BLOCK (daily incremental)                             #}
-{# Two active sources — spreadsheet PSA layer and CDC.          #}
+{# Three active sources — spreadsheet PSA layer, and CDC from   #}
+{# the metadata manager and the sequence run manager.           #}
 {# Each source is read from where the last run left off,        #}
 {# ie. CDC with cdc_bound, the spreadsheet PSA with load_bound. #}
 {# ============================================================ #}
@@ -66,7 +68,7 @@ with spreadsheet_source as (
 
 ),
 
-cdc_source as (
+mm_source as (
 
     select distinct
         library_id,
@@ -76,13 +78,27 @@ cdc_source as (
 
 ),
 
+srm_source as (
+
+    select distinct
+        library_id,
+        'orcabus_sequence_run_manager' as record_source
+    from {{ source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }}
+    where {{ cdc_bound('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation') }}
+
+),
+
 active_cleaned as (
 
     select * from spreadsheet_source
     where library_id is not null
       and library_id <> ''
     union all
-    select * from cdc_source
+    select * from mm_source
+    where library_id is not null
+      and library_id <> ''
+    union all
+    select * from srm_source
     where library_id is not null
       and library_id <> ''
 
@@ -113,7 +129,8 @@ merged as (
                     when 'data_portal_labmetadata'                then 3
                     when 'data_portal_limsrow'                    then 4
                     when 'orcabus_metadata_manager'               then 5
-                    else 6
+                    when 'orcabus_sequence_run_manager'           then 6
+                    else 7
                 end
             ) as rn
         from (
@@ -134,7 +151,8 @@ merged as (
                 order by case record_source
                     when 'spreadsheet__library_tracking_metadata' then 1
                     when 'orcabus_metadata_manager'               then 2
-                    else 3
+                    when 'orcabus_sequence_run_manager'           then 3
+                    else 4
                 end
             ) as rn
         from active_cleaned
