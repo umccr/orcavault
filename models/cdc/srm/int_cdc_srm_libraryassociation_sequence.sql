@@ -4,6 +4,12 @@
     )
 }}
 
+{#
+
+The latest association of each library and sequencing run including deletes.
+
+#}
+
 select * from (
     select
         assoc.library_id                                as library_id,

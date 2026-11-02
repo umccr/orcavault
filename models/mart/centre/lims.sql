@@ -22,6 +22,16 @@ with effective_sequencing_run as (
 
 ),
 
+effsat_library_sequencing_run as (
+
+    select lnk.*
+    from {{ ref('link_library_sequencing_run') }} lnk
+        join {{ ref('effsat_library_sequencing_run') }} effsat
+            on effsat.library_sequencing_run_hk = lnk.library_sequencing_run_hk
+    where effsat.is_current = 1
+
+),
+
 effsat_library_ownership as (
 
     select lnk.*
@@ -126,7 +136,7 @@ transformed as (
         sat.truseq_index                                            as truseq_index,
         sat.load_datetime                                           as load_datetime
     from {{ ref('hub_library') }} lib
-        left join {{ ref('link_library_sequencing_run') }} lnk1
+        left join effsat_library_sequencing_run lnk1
             on lib.library_hk = lnk1.library_hk
         left join effective_sequencing_run sqr
             on lnk1.sequencing_run_hk = sqr.sequencing_run_hk

@@ -309,3 +309,51 @@ models:
         data_type: timestamptz
       - name: is_current
         data_type: smallint
+
+  - name: effsat_library_sequencing_run
+    config:
+      contract: { enforced: true }
+    constraints:
+      - type: primary_key
+        columns: [ library_sequencing_run_hk, load_datetime, hash_diff ]
+        warn_unenforced: false
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_sequencing_run_hk
+              - load_datetime
+              - hash_diff
+    columns:
+      - name: library_sequencing_run_hk
+        data_type: char(64)
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('link_library_sequencing_run')
+                field: library_sequencing_run_hk
+          # The marts join the current row to the link, so there can only be one.
+          - unique:
+              config:
+                where: "is_current = 1"
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(100)
+      - name: hash_diff
+        data_type: char(64)
+        data_tests:
+          - not_null
+      - name: library_id
+        data_type: varchar(255)
+      - name: sequencing_run_id
+        data_type: varchar(255)
+      - name: effective_from
+        data_type: timestamptz
+      - name: effective_to
+        data_type: timestamptz
+      - name: is_current
+        data_type: smallint

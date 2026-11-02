@@ -1,0 +1,110 @@
+# These are unit tests for how the sequence run manager's library associations are loaded, including their deletes.
+# DMS writes a delete as a `D` row with only the `orcabus_id`, see `cdc_fill_delete`. They use the same window as the
+# watermark tests, 2026-10-05 00:00 to 01:00, set once as `&window` in the first test, and the inputs are the `.sql`
+# files next to this file.
+
+version: 2
+
+unit_tests:
+
+  - name: srm_delete_keeps_its_association
+    description: >
+      Tests that a deleted association has `op`.
+    model: int_cdc_srm_libraryassociation
+    overrides:
+      vars:
+        cdc_watermark_overrides:
+          orcabus_sequence_run_manager.sequence_run_manager_libraryassociation: &window {position: '2026-10-05 00:00', pending: '2026-10-05 01:00'}
+    given:
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation')
+        format: sql
+        fixture: delete_keeps_association__libraryassociation
+    expect:
+      rows:
+        - {orcabus_id: assoc_deleted,   library_id: L_DELETED, sequence_id: seq_a, op: D, cdc_changed: true}
+        - {orcabus_id: assoc_kept,      library_id: L_KEPT,    sequence_id: seq_a, op: I, cdc_changed: false}
+        - {orcabus_id: assoc_same_time, library_id: L_SAME,    sequence_id: seq_a, op: D, cdc_changed: true}
+
+  - name: srm_delete_is_recorded_against_its_link
+    description: >
+      Tests that a delete is recorded with the link of the association it deleted.
+    model: sat_library_sequencing_run_srm
+    overrides:
+      macros:
+        is_incremental: true
+      vars:
+        cdc_watermark_overrides:
+          orcabus_sequence_run_manager.sequence_run_manager_libraryassociation: *window
+          orcabus_sequence_run_manager.sequence_run_manager_sequence: *window
+    given:
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_sequence')
+        format: sql
+        fixture: delete_recorded__sequence
+      - input: source('orcabus_sequence_run_manager', 'sequence_run_manager_libraryassociation')
+        format: sql
+        fixture: delete_recorded__libraryassociation
+      - input: this
+        format: sql
+        fixture: delete_recorded__this
+    expect:
+      rows:
+        - {library_sequencing_run_hk: a91d8f04f99c1ae6f2c20de1f3e535b4df578f6aed066141e7bb82daf4436f05, orcabus_id: assoc_deleted, op: D, sequence_id: null, status: null, association_date: null}  # pragma: allowlist secret
+
+  - name: effsat_ends_deleted_links
+    description: >
+      Tests that a link from the sequence run manager is effective until its last association is deleted.
+    model: effsat_library_sequencing_run
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('link_library_sequencing_run')
+        format: sql
+        fixture: effectivity__link
+      - input: ref('sat_library_sequencing_run_srm')
+        format: sql
+        fixture: effectivity__sat
+      - input: ref('hub_library')
+        format: sql
+        fixture: effectivity__hub_library
+      - input: ref('hub_sequencing_run')
+        format: sql
+        fixture: effectivity__hub_sequencing_run
+    expect:
+      rows:
+        - {library_sequencing_run_hk: hk_live,           library_id: L_LIVE,           sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_deleted,        library_id: L_DELETED,        sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-03 00:00:00', is_current: 0}
+        - {library_sequencing_run_hk: hk_recreated,      library_id: L_RECREATED,      sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-02 00:00:00', is_current: 0}
+        - {library_sequencing_run_hk: hk_recreated,      library_id: L_RECREATED,      sequencing_run_id: RUN_A,   effective_from: '2026-10-03 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_replaced,       library_id: L_REPLACED,       sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_shared,         library_id: L_SHARED,         sequencing_run_id: RUN_A,   effective_from: '2026-10-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_no_assoc,       library_id: L_NO_ASSOC,       sequencing_run_id: RUN_A,   effective_from: '2026-10-01 01:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_legacy,         library_id: L_LEGACY,         sequencing_run_id: RUN_OLD, effective_from: '2026-09-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+        - {library_sequencing_run_hk: hk_legacy_deleted, library_id: L_LEGACY_DELETED, sequencing_run_id: RUN_A,   effective_from: '2026-09-01 00:00:00', effective_to: '9999-12-31 00:00:00', is_current: 1}
+
+  - name: effsat_closes_the_current_row
+    description: >
+      Tests that a delete since the last run closes the current row, and keeps its `load_datetime`.
+    model: effsat_library_sequencing_run
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('link_library_sequencing_run')
+        format: sql
+        fixture: closes_current__link
+      - input: ref('sat_library_sequencing_run_srm')
+        format: sql
+        fixture: closes_current__sat
+      - input: ref('hub_library')
+        format: sql
+        fixture: effectivity__hub_library
+      - input: ref('hub_sequencing_run')
+        format: sql
+        fixture: effectivity__hub_sequencing_run
+      - input: this
+        format: sql
+        fixture: closes_current__this
+    expect:
+      rows:
+        - {library_sequencing_run_hk: hk_deleted, load_datetime: '2026-10-01 01:00:00', effective_from: '2026-10-01 00:00:00', effective_to: '2026-10-05 00:30:00', is_current: 0}
