@@ -1,6 +1,14 @@
 version: 2
 
 models:
+  - name: catalog
+    description: Data mart table catalog
+    columns:
+      - name: table_name
+        data_tests:
+          - unique
+          - not_null
+
   - name: lims
     description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
 

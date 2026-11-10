@@ -1,0 +1,16 @@
+version: 2
+
+seeds:
+
+  - name: dictionary__data_mart_catalog
+    description: Dictionary of the data mart tables, with description and stability remark
+    config:
+      column_types:
+        table_name: varchar(255)
+        table_description: varchar(1024)
+        table_remark: varchar(255)
+    columns:
+      - name: table_name
+        data_tests:
+          - unique
+          - not_null

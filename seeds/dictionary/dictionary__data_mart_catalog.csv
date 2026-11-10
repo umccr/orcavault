@@ -1,0 +1,11 @@
+table_name,table_description,table_remark
+lims,Listing of the Centre genomic sequencing LIMS metadata in flat table model,STABLE
+fastq,Listing of the Centre genomic sequencing unaligned read level file FASTQ S3 locations in flat table model,STABLE
+bam,Listing of the Centre genomic sequencing aligned read level file BAM and BAI S3 locations in flat table model,STABLE
+vcf,Listing of the Centre genomic sequencing variant call file VCF and TBI S3 locations in flat table model,DEMO
+workflow,Listing of the Centre genomic sequencing analysis workflow run details in flat table model,STABLE
+workflow_output,Listing of the Centre genomic sequencing analysis workflow run output location in flat table model,STABLE
+workflow_cost_report,"Listing of the Centre genomic sequencing analysis workflow run ICA costs by ICA project in flat table model. Costs are reported in BIC; usage billed in iCredits before the 2026-05 BioInsight Core cutover is reported as BIC, since Illumina renamed the unit 1:1. Costs are net of any Illumina discount.",DEMO
+em_library_services,Listing of sequenced libraries and whether each one exists in OrcaBus services (1 = yes; 0 = no),STABLE
+em_library_aliases,"Listing of library aliases and their base library, with run and comments from the lab team",STABLE
+em_library_dns,"Listing of libraries the lab team marked as do not sequence (DNS), with run and comments",STABLE
