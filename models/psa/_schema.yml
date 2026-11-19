@@ -1,7 +1,6 @@
 version: 2
 
 models:
-
   - name: spreadsheet__library_tracking_metadata
     columns:
       - name: assay
@@ -263,3 +262,253 @@ models:
               arguments:
                 values:
                   - spreadsheet__ica_usage_report
+
+  - name: redcap__case
+    # History table: a request appends a new version whenever any column changes, so request_id repeats across
+    # loads. Within one load the source holds one row per REDCap record, so a request_id appearing twice in the
+    # same load_datetime means the snapshot was duplicated or the source key is no longer unique.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - request_id
+              - load_datetime
+    columns:
+      - name: request_id
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: request_id_sk
+        data_type: varchar
+      - name: individual_id
+        data_type: varchar
+      - name: rf_consent_signed
+        data_type: varchar
+      - name: identified
+        data_type: varchar
+      - name: rf_study
+        data_type: varchar
+      - name: rf_study_id
+        data_type: varchar
+      - name: rf_timepoint
+        data_type: varchar
+      - name: institution_code
+        data_type: varchar
+      - name: rf_ur
+        data_type: varchar
+      - name: rf_sex
+        data_type: varchar
+      - name: rf_patient_gender_spcu
+        data_type: varchar
+      - name: rf_diagnosis
+        data_type: varchar
+      - name: rf_test_requested
+        data_type: varchar
+      - name: rf_cttso_sample_type
+        data_type: varchar
+      - name: rf_cttso_dna_sample_id
+        data_type: varchar
+      - name: rf_cttso_collect_date
+        data_type: varchar
+      - name: rf_cttso_collect_time
+        data_type: varchar
+      - name: cttso_receipt_date
+        data_type: varchar
+      - name: cttso_receipt_time
+        data_type: varchar
+      - name: cgw_mrn
+        data_type: varchar
+      - name: cgw_snomed_disease_code
+        data_type: varchar
+      - name: cgw_specimen
+        data_type: varchar
+      - name: cgw_sample_type
+        data_type: varchar
+      - name: cgw_is_identified
+        data_type: varchar
+      - name: cgw_is_identifed
+        data_type: varchar
+      - name: cgw_panel
+        data_type: varchar
+      - name: cttso_sample_id
+        data_type: varchar
+      - name: cttso_library_id
+        data_type: varchar
+      - name: cttso_prid
+        data_type: varchar
+      - name: cttso_curation_status
+        data_type: varchar
+      - name: cttso_accession_id
+        data_type: varchar
+      - name: rf_tumour_sample_type
+        data_type: varchar
+      - name: rf_tumour_dna_sample_id
+        data_type: varchar
+      - name: rf_tumour_rna_sample_id
+        data_type: varchar
+      - name: rf_tumour_collect_date
+        data_type: varchar
+      - name: rf_tumour_biopsy_site
+        data_type: varchar
+      - name: rf_germline_sample_type
+        data_type: varchar
+      - name: rf_germline_dna_sample_id
+        data_type: varchar
+      - name: rf_germline_collect_date
+        data_type: varchar
+      - name: tumour_receipt_date
+        data_type: varchar
+      - name: report_due_date
+        data_type: varchar
+      - name: nata_accred_report
+        data_type: varchar
+      - name: rnasum_reference___pancan
+        data_type: varchar
+      - name: rnasum_reference___acc
+        data_type: varchar
+      - name: rnasum_reference___blca
+        data_type: varchar
+      - name: rnasum_reference___blca_net
+        data_type: varchar
+      - name: rnasum_reference___brca
+        data_type: varchar
+      - name: rnasum_reference___cesc
+        data_type: varchar
+      - name: rnasum_reference___chol
+        data_type: varchar
+      - name: rnasum_reference___coad
+        data_type: varchar
+      - name: rnasum_reference___dlbc
+        data_type: varchar
+      - name: rnasum_reference___esca
+        data_type: varchar
+      - name: rnasum_reference___gbm
+        data_type: varchar
+      - name: rnasum_reference___hnsc
+        data_type: varchar
+      - name: rnasum_reference___kich
+        data_type: varchar
+      - name: rnasum_reference___kirc
+        data_type: varchar
+      - name: rnasum_reference___kirp
+        data_type: varchar
+      - name: rnasum_reference___laml
+        data_type: varchar
+      - name: rnasum_reference___lgg
+        data_type: varchar
+      - name: rnasum_reference___lihc
+        data_type: varchar
+      - name: rnasum_reference___luad
+        data_type: varchar
+      - name: rnasum_reference___lusc
+        data_type: varchar
+      - name: rnasum_reference___meso
+        data_type: varchar
+      - name: rnasum_reference___ov
+        data_type: varchar
+      - name: rnasum_reference___paad
+        data_type: varchar
+      - name: rnasum_reference___pcpg
+        data_type: varchar
+      - name: rnasum_reference___prad
+        data_type: varchar
+      - name: rnasum_reference___read
+        data_type: varchar
+      - name: rnasum_reference___sarc
+        data_type: varchar
+      - name: rnasum_reference___skcm
+        data_type: varchar
+      - name: rnasum_reference___stad
+        data_type: varchar
+      - name: rnasum_reference___tgct
+        data_type: varchar
+      - name: rnasum_reference___thca
+        data_type: varchar
+      - name: rnasum_reference___thym
+        data_type: varchar
+      - name: rnasum_reference___ucec
+        data_type: varchar
+      - name: rnasum_reference___ucs
+        data_type: varchar
+      - name: rnasum_reference___uvm
+        data_type: varchar
+      - name: rnasum_reference___luad_lcnec
+        data_type: varchar
+      - name: rnasum_reference___paad_acc
+        data_type: varchar
+      - name: rnasum_reference___paad_ipmn
+        data_type: varchar
+      - name: rnasum_reference___paad_net
+        data_type: varchar
+      - name: germline_receipt_date
+        data_type: varchar
+      - name: qci_diagnosis_term
+        data_type: varchar
+      - name: qci_tumour_sample_type
+        data_type: varchar
+      - name: qci_primary_tumor_site
+        data_type: varchar
+      - name: qci_germline_sample_type
+        data_type: varchar
+      - name: tumour_sample_id
+        data_type: varchar
+      - name: tumour_library_id
+        data_type: varchar
+      - name: wgs_tumour_prid
+        data_type: varchar
+      - name: wgs_analysis_id
+        data_type: varchar
+      - name: tumour_curation_status
+        data_type: varchar
+      - name: qci_somatic_dp_id
+        data_type: varchar
+      - name: qci_somatic_accession_id
+        data_type: varchar
+      - name: qci_somatic_accession_url
+        data_type: varchar
+      - name: germline_sample_id
+        data_type: varchar
+      - name: germline_library_id
+        data_type: varchar
+      - name: wgs_germline_prid
+        data_type: varchar
+      - name: germline_curation_status
+        data_type: varchar
+      - name: qci_germline_dp_id
+        data_type: varchar
+      - name: qci_germline_accession_id
+        data_type: varchar
+      - name: qci_germline_accession_url
+        data_type: varchar
+      - name: legacy_order_id
+        data_type: varchar
+      - name: wts_sample_id
+        data_type: varchar
+      - name: wts_library_id
+        data_type: varchar
+      - name: wts_prid
+        data_type: varchar
+      - name: wts_curation_status
+        data_type: varchar
+      - name: request_alias
+        data_type: varchar
+      - name: rf_comments
+        data_type: varchar
+      - name: request_entry_complete
+        data_type: varchar
+      - name: internal_details_complete
+        data_type: varchar
+      - name: test_request_complete
+        data_type: varchar
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(255)
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - redcap__case
