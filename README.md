@@ -97,6 +97,8 @@ from the beginning all over again. BUT. Doing so will lose the model's historica
 dbt run -s hub_sequencing_run --full-refresh
 ```
 
+## ICA Usage
+
 The append-only ICA usage models ignore a project-wide `--full-refresh`, so a routine full refresh of the project cannot
 silently discard their load history. A column added to a model's SQL is applied to the existing table in place with
 `on_schema_change: append_new_columns`, so widening these models never needs a rebuild. Rebuild them only when you mean
@@ -107,6 +109,19 @@ dbt run -s spreadsheet__ica_usage_report sat_workflow_run_ica_usage --vars '{ica
 ```
 
 This is lossless only while `tsa.spreadsheet__ica_usage_report` still carries every source row.
+
+## UNLOAD schema
+
+This is implemented as stored procedure via dbt macros. See for more details - https://github.com/umccr/orcahouse-project/issues/94
+
+```
+dbt run-operation deploy_unload_schema
+```
+
+```
+dbt run-operation run_unload_schema --args \
+  '{"schema_name": "mart", "s3_bucket_path": "", "iam_role_arn": ""}'
+```
 
 ## Redshift
 
