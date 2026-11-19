@@ -6,8 +6,9 @@
     orcabus source once it has both the tag and the bound.
 
     It doesn't check the other direction, that every `cdc` tagged source has a model reading it.
-    A tagged source that nothing reads isn't a problem, it just costs an extra query when updating
-    `pending`.
+    A tagged source that nothing reads isn't a problem. Its row in `ops.cdc_watermark` has the
+    `position` and `pending`, which is not present for a new row, as a run only updates the sources
+    that it reads.
 
 -#}
 

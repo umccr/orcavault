@@ -25,14 +25,16 @@ The main components are:
 - `ops.cdc_watermark` has one watermark for each CDC source table, called its
   `position`. Every model has processed the table's commits up to that time.
   Models have no positions of their own.
-- At the start of a run, dbt records `pending` for every table. This is the
-  point the run reads up to. The commit times after `position` and up to
-  `pending`, are the table's window. This window has the changes that earlier
-  runs haven't processed.
-- At the end of a successful `dbt run` or `dbt build`, dbt moves each `position`
-  up to a margin before its `pending`. After any other run, the positions stay
-  where they were. Positions are updated all at once, and a single failure
-  results in re-read.
+- At the start of a run, dbt records `pending` for every table that the run
+  reads. This is the point the run reads up to. The commit times after
+  `position` and up to `pending`, are the table's window. This window has the
+  changes that earlier runs haven't processed.
+- At the end of a `dbt run` or `dbt build`, dbt moves a table's `position` up to
+  a margin before its `pending`, once every model that reads the table has
+  succeeded in that run. Otherwise, the position stays where it was, and the
+  next run reads the window again. Each table has its watermark updated on its own, so a
+  failure or a `--select` only holds back the tables that the missing models
+  read.
 - Every incremental model already skips rows it has, either by merging on a key
   or by checking for the row's hash, so re-reading is harmless. The watermark is
   designed to avoid losing rows rather than over-reading.
@@ -67,8 +69,8 @@ command:
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
 | `source_id`             | The dbt source, i.e. `<source_name>.<table_name>`.                                                  |
 | `position`              | The position every model has processed commits up to. Null means the next run reads from the start. |
-| `pending`               | The newest visible commit time when the run started. The current run reads up to here.              |
-| `pending_invocation_id` | The dbt invocation that set `pending`. This is used to update `position` later.                     |
+| `pending`               | The newest visible commit time when the last run to read the table started. It reads up to here.    |
+| `pending_invocation_id` | The dbt invocation that set `pending`. Only that invocation can move `position` up to it.           |
 | `updated_at`            | The update time of the last write.                                                                  |
 
 There is one row for each source table tagged with `cdc` in
@@ -119,6 +121,24 @@ At the end of the run, `position` is set to a margin before `pending`, so the
 next run reads the last few minutes again. This catches rows committed before
 `pending` that weren't visible yet, such as a transaction split across two DMS
 files.
+
+### Which positions get updated
+
+Each table's `position` is updated on its own, from the models that read it. A
+model reads a table when it selects from the source directly, or through an
+ephemeral `int_cdc` model.
+
+- A run only sets `pending` for the tables that its selected models used, so it
+  won't move the position of any other table.
+- A table's `position` is updated when every model that needs it succeeded in the
+  run. If one failed, was skipped or wasn't selected, the position stays.
+- Models downstream that don't depend on the `position` aren't part of this, as they
+  use `load_bound`.
+
+A failure in a full run only prevents updating watermarks for tables that the failed and
+skipped models read. A run with `--select` updates a watermark only when it covers all
+of the table's readers, such as
+`dbt build --select source:orcabus_sequence_run_manager+`.
 
 ## The bound macros
 
@@ -280,6 +300,6 @@ Consider the following if anything needs fixing:
 - Avoid running dbt while DMS is doing a full load, e.g. after a "Reload target"
   or "Reload table data". Every reloaded row has the same commit time, so models
   in one run can see different rows and tests can fail.
-- Avoid starting a run while another run is in progress. While
-  `pending_invocation_id` will keep the CDC positions safe, the `load_bound`
-  assumes that runs don't overlap.
+- Avoid starting a run while another run is in progress, including one with
+  `--select`. While `pending_invocation_id` will keep the CDC positions safe,
+  the `load_bound` assumes that runs don't overlap.
