@@ -13,7 +13,7 @@
         {% set parent = graph.nodes.get(parent_id) %}
 
         {#- A model that stores its own rows isn't recursively followed, as it has
-            already read the window using it's own `load_bound` instead. -#}
+            already read the window using its own `load_bound` instead. -#}
         {% if cdc_source and 'cdc' in cdc_source.tags %}
             {% do read.append(parent_id) %}
         {% elif parent and parent.config.materialized in ['ephemeral', 'view'] %}

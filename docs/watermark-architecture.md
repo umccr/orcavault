@@ -32,7 +32,7 @@ The main components are:
 - At the end of a `dbt run` or `dbt build`, dbt moves a table's `position` up to
   a margin before its `pending`, once every model that reads the table has
   succeeded in that run. Otherwise, the position stays where it was, and the
-  next run reads the window again. Each table has it's watermark updated on its own, so a
+  next run reads the window again. Each table has its watermark updated on its own, so a
   failure or a `--select` only holds back the tables that the missing models
   read.
 - Every incremental model already skips rows it has, either by merging on a key
