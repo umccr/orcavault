@@ -1,5 +1,6 @@
 table_name,table_description,table_remark
 lims,Listing of the Centre genomic sequencing LIMS metadata in flat table model,DEMO
+accreditation_lims,Listing of the Centre genomic sequencing Accreditation LIMS metadata in flat table model,DEMO
 external_lims,Listing of externally sequenced LIMS metadata in flat table model,DEMO
 fastq,Listing of the Centre genomic sequencing unaligned read level file FASTQ S3 locations in flat table model,DEMO
 bam,Listing of the Centre genomic sequencing aligned read level file BAM and BAI S3 locations in flat table model,DEMO
