@@ -1,0 +1,31 @@
+version: 2
+
+seeds:
+
+  - name: accreditation__library_run
+    description: >
+      WGS accreditation sample list, one row per library and sequencing run, with its accreditation label.
+      Rows with a sequencing_run_id are matched against the lims mart; rows without one are externally
+      sequenced libraries and are matched against the external_lims mart by library_id.
+      Sourced from https://github.com/umccr/research-projects/tree/main/grimmond-lab/wgs-accreditation/data
+    config:
+      column_types:
+        label: varchar(255)
+        library_id: varchar(255)
+        sequencing_run_id: varchar(255)
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_id
+              - sequencing_run_id
+    columns:
+      - name: label
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['clinical', 'control_germline', 'control_somatic', 'ptc']
+      - name: library_id
+        data_tests:
+          - not_null
