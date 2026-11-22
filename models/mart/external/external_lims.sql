@@ -31,8 +31,7 @@ with effective_sequencing_run as (
 
     select distinct
         hub.sequencing_run_hk,
-        hub.sequencing_run_id,
-        sat.status
+        hub.sequencing_run_id
     from {{ ref('hub_sequencing_run') }} hub
         left join {{ ref('sat_sequencing_run_detail') }} sat
             on hub.sequencing_run_hk = sat.sequencing_run_hk
@@ -48,6 +47,22 @@ effsat_library_sequencing_run as (
         join {{ ref('effsat_library_sequencing_run') }} effsat
             on effsat.library_sequencing_run_hk = lnk.library_sequencing_run_hk
     where effsat.is_current = 1
+
+),
+
+effective_library_sequencing_run as (
+
+    {#
+        Restrict run links to eligible runs before joining to the library, so a link to an ineligible run
+        does not survive the left join as a spurious runless row.
+    #}
+
+    select
+        lnk.library_hk,
+        sqr.sequencing_run_id
+    from effsat_library_sequencing_run lnk
+        join effective_sequencing_run sqr
+            on lnk.sequencing_run_hk = sqr.sequencing_run_hk
 
 ),
 
@@ -169,19 +184,17 @@ transformed as (
         expr.experiment_id                                          as experiment_id,
         prj.project_id                                              as project_id,
         owner.owner_id                                              as owner_id,
-        coalesce(glab.workflow, mm.workflow)                        as workflow,
-        coalesce(glab.phenotype, mm.phenotype)                      as phenotype,
-        coalesce(glab.type, mm.type)                                as type,
-        coalesce(glab.assay, mm.assay)                              as assay,
-        coalesce(glab.quality, mm.quality)                          as quality,
+        coalesce(nullif(glab.workflow, ''), mm.workflow)            as workflow,
+        coalesce(nullif(glab.phenotype, ''), mm.phenotype)          as phenotype,
+        coalesce(nullif(glab.type, ''), mm.type)                    as type,
+        coalesce(nullif(glab.assay, ''), mm.assay)                  as assay,
+        coalesce(nullif(glab.quality, ''), mm.quality)              as quality,
         glab.source                                                 as source,
         glab.truseq_index                                           as truseq_index,
         coalesce(glab.load_datetime, mm.load_datetime)              as load_datetime
     from {{ ref('hub_library') }} lib
-        left join effsat_library_sequencing_run lnk1
-            on lib.library_hk = lnk1.library_hk
-        left join effective_sequencing_run sqr
-            on lnk1.sequencing_run_hk = sqr.sequencing_run_hk
+        left join effective_library_sequencing_run sqr
+            on lib.library_hk = sqr.library_hk
         left join effsat_library_internal_subject lnk2
             on lib.library_hk = lnk2.library_hk
         left join {{ ref('hub_internal_subject') }} int_sbj

@@ -21,5 +21,8 @@ where not exists (
     from {{ ref('accreditation_lims') }} mart
     where mart.label = acc.label
       and mart.library_id = acc.library_id
-      and coalesce(mart.sequencing_run_id, '') = coalesce(acc.sequencing_run_id, '')
+      and (
+            nullif(acc.sequencing_run_id, '') is null
+            or mart.sequencing_run_id = acc.sequencing_run_id
+      )
 )
