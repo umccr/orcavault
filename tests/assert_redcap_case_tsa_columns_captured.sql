@@ -1,11 +1,11 @@
 {#
-    PSA is meant to mirror tsa.redcap__case, but its projection enumerates columns explicitly, and
-    on_schema_change only ever compares a model against its own target table. A field added to the REDCap
-    project and picked up by TSA is therefore dropped with a green build.
+    PSA mirrors tsa.redcap__case. The model reads its column list from TSA at run time and
+    on_schema_change='append_new_columns' adds any new TSA column to the PSA table, so this test is a
+    safety net, not the way columns get added.
 
-    Returns one row per TSA column the PSA table does not carry. The fix is to add the column to
-    models/psa/redcap__case.sql, never to relax this test. Adding it to the column list changes what the
-    EXCEPT compares, so read the note at the top of that model first.
+    Returns one row per TSA column the PSA table does not carry. A row here means the model has not run
+    since the column appeared in TSA (run order, or a failed or skipped run), or the PSA table was altered
+    by hand. Re-run the model with: dbt run -s redcap__case. Never relax this test.
 
     Severity is warn, not error: an uncaptured column leaves the history incomplete rather than wrong.
 #}
