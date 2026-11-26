@@ -121,6 +121,10 @@ This is lossless only while `tsa.spreadsheet__ica_usage_report` still carries ev
 
 This is implemented as stored procedure via dbt macros. See for more details - https://github.com/umccr/orcahouse-project/issues/94
 
+The [orcavault-run](https://github.com/umccr/orcahouse/tree/main/infra/orcavault-run#the-unload) daily run calls the
+procedure but doesn't deploy it, so its owner redeploys it after a change. Each deploy grants EXECUTE on it to the
+`orcavault_builder` role.
+
 ```
 dbt run-operation deploy_unload_schema
 ```
