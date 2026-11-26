@@ -13,7 +13,7 @@
 
     -#}
 
-    {#- A personal target should not touch the watermarks, see README_DEV.md. -#}
+    {#- A personal target should not touch the watermarks, see docs/dev/personal-schemas.md. -#}
     {% if is_personal_target() %}
         {{ return('') }}
     {% endif %}

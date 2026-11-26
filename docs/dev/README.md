@@ -1,0 +1,70 @@
+# Development setup
+
+We expect the following dev tools to be installed and available in your system PATH. We provide [Brewfile](../../Brewfile) as an example on macOS and you can run `brew bundle` to install them. You can manage these dev tools in any other way as see fit for your local dev setup and suits to your OS.
+
+Tools:
+- Python3 _(pick your preferred way to manage the virtual environment)_
+- dbt-core cli – https://github.com/dbt-labs/dbt-core
+- aws-cli
+- GitHub cli (`gh`) – https://cli.github.com _(lets agents read issues and PRs; run `gh auth login` once)_
+- OpenSpec cli – https://openspec.dev _(spec-driven changes, see [spec-driven.md](spec-driven.md))_
+- Makefile _(Optional `make` binary to execute [Makefile](../../Makefile) targets. You can directly call those commands and scripts, otherwise.)_
+- dx.sh _(Optional [dx.sh](../../dx.sh) scripts.)_
+
+Example:
+
+From the project root directory, do like so.
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+Note that we use Python3 virtual environment (venv, conda, uv or any equivalent) for managing dbt-core cli and other commandline tools (if any). `python3` must be a version that `dbt-core` supports (see its PyPI page). No Python development nor syntax familiarity is expected. We are SQL shop! See the next section.
+
+## AWS Session
+
+Use your usual way of AWS CLI setup to authenticate. Manage and switch authenticated session and AWS profile however you like. Be consistent with your setup in your way. You do not need to change that. Any README.md guideline "step" around AWS CLI authenticated session is just "an example" only. The step only _signals_ that you need to be authenticated at the point. How is – up to you.
+
+## Connecting to Redshift
+
+Redshift is private and only reachable through an SSH tunnel; see
+[Platform](../architecture/README.md#platform). The steps are in
+[personal-schemas.md](personal-schemas.md).
+
+## Skills
+
+Please do read all the documentation at https://github.com/umccr/orcahouse-doc
+
+Dev:
+
+- SQL (intermediate to advanced—CTE, CTAS, JOIN, WINDOW, PARTITION, RANK, ROW_NUMBER, CASE/WHEN, etc.)
+- dbt
+- PostgreSQL (data type, built-in functions, PL/pgSQL and stored procedure, view, trigger, etc.)
+- Fundamental in database design and data modelling concepts 
+  - relational data modelling / entity-relationship data modelling (ERD, 3NF, BCNF, FK, PK, UK, etc.)
+- Data warehouse data modelling techniques
+  - Data Vault 2.0 (Daniel Linstedt)
+  - Dimensional Modelling (Ralph Kimball)
+
+
+Infra:
+
+- AWS (RDS Aurora, Redshift, Athena, Glue, ECS, Lambda, EC2, EventBridge)
+- Datalake (S3)
+- Terraform
+- Git and GitHub
+- Database Administration—DBA (query pref, tuning, backup, snapshot, proxy, tunnel, etc.)
+- DataBricks, BigQuery (optionally building data mart layer when applicable)
+
+
+IDE:
+
+_note; recommendation only. leverage any other IDE combo as see fit for your productivity._
+
+- VSCode
+- JetBrains (PyCharm, DataGrip)
+- DBeaver
+- pgAdmin
+- Oracle SQL Developer
+- https://github.com/dineug/erd-editor

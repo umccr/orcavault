@@ -22,3 +22,14 @@ repos:
         name: detect secrets
         args: [ '--baseline', '.secrets.baseline' ]
         exclude: ^(.venv/|.local/|.terraform/|terraform.tfstate.d/|dbt_packages/|logs/)|package-lock.yml|pnpm-lock.yaml
+
+  - repo: local
+    hooks:
+      - id: readme-line-cap
+        name: README.md stays a landing page (max 60 lines)
+        language: system
+        files: ^README\.md$
+        pass_filenames: false
+        entry: >-
+          bash -c 'n=$(wc -l < README.md);
+          [ "$n" -le 60 ] || { echo "README.md has $((n)) lines (max 60). Put new content in docs/dev/<topic>.md and index it in docs/README.md."; exit 1; }'

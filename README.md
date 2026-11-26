@@ -1,145 +1,47 @@
 # OrcaVault
 
+<!-- Landing page only, capped at 60 lines by a pre-commit hook. Do not add content here: put a
+     new how-to or note in its own docs/dev/<topic>.md and add one line to the Index in docs/README.md. -->
+
+The data warehouse dbt project.
+
 For project documentation, please refer to https://github.com/umccr/orcahouse-doc
 
 For data warehouse issue tracking, please submit an issue to https://github.com/umccr/orcahouse-project/issues
 
-## Development
+## Quickstart
 
-Create a Python virtual environment (any method) and install the dev toolchain [requirements](requirements.txt).
+Most of us develop with an agent (Claude Code or Kiro), in our own personal schema.
 
-See [README_DEV.md](README_DEV.md) for more _comprehensive_ setup details.
+1. **Set up and connect** (you run this; it is interactive):
 
-```
-conda activate orcavault
-make install
-make check
-```
+   ```
+   python3 -m venv .venv && source .venv/bin/activate
+   make install && make check
 
-We need an authenticated AWS session as we are developing against the remote OrcaVault dev environment.
+   export AWS_PROFILE=unimelb-warehouse-prod-poweruser
+   aws sso login                             # any AWS login method
 
-Use your usual AWS CLI setup to authenticate.
+   source dx.sh && house_up                  # tunnel, credentials, personal schema
+   dbt deps                                  # once per clone, and after dbt clean
+   dbt_defer                                 # sync with the dev daily run
+   ```
 
-For example:
+   Details and the daily loop: [docs/dev/personal-schemas.md](docs/dev/personal-schemas.md).
 
-```
-export AWS_PROFILE=unimelb-warehouse-prod-poweruser
-aws sso login
-```
-
-Source the [dx script](dx.sh). It exports shell functions (command shortcut) related to the remote OrcaVault dev
-environment.
-
-```
-source dx.sh
-```
-
-Connect to the dev warehouse. This makes the house key, the hosts entry, the tunnel and the dbt credentials.
-
-```
-house_up
-```
-
-Each step is also its own function: `house_key`, `house_host`, `house_tunnel`, `house_nc` and `house_cred`. `house_down`
-closes the tunnel and clears the credentials.
-
-Run the dbt debug command to check the connection.
-
-```
-dbt debug
-```
-
-You should expect to see a successful connection.
-
-```
-<...>
-07:22:44  Registered adapter: redshift=1.10.1
-07:22:47    Connection test: [OK connection ok]
-
-07:22:47  All checks passed!
-```
-
-Install the dbt package dependencies listed in [packages.yml](packages.yml). Do this once per clone, and again after
-`dbt clean`, which removes them. Other dbt commands fail with a compilation error until it is done.
-
-```
-dbt deps
-```
-
-## Personal schema
-
-Building in your own personal schema is the preferred workflow. It's named after your AWS SSO username by default, run
-`house_schema` to see yours, or set `ORCAVAULT_SCHEMA` to pick another name. It works like a diff over the dev daily
-run, which you sync with using `dbt_defer` or `dbt_clone` before building. See
-[README_DEV.md](README_DEV.md#personal-schemas) for setup and instructions.
-
-If you want to opt out of personal schemas, run `house_shared` after `house_up` to go back to the original workflow
-using the shared dev schema, in which case the [dbt](#dbt) section below applies.
-
-## dbt
-
-The dbt has multiple targets. You can `dbt --help` for more details.
-
-```
-dbt debug
-dbt clean
-dbt deps
-dbt compile
-dbt build
-dbt seed
-dbt run
-dbt test
-```
-
-You can run a specific model by name.
-
-```
-dbt run -s hub_sequencing_run
-```
-
-Running the incremental model won't be updated upon the consecutive run. You can pass `--full-refresh` flag to reload
-from the beginning all over again. BUT. Doing so will lose the model's historical `load_datetime` history.
-
-```
-dbt run -s hub_sequencing_run --full-refresh
-```
-
-## ICA Usage
-
-The append-only ICA usage models ignore a project-wide `--full-refresh`, so a routine full refresh of the project cannot
-silently discard their load history. A column added to a model's SQL is applied to the existing table in place with
-`on_schema_change: append_new_columns`, so widening these models never needs a rebuild. Rebuild them only when you mean
-it, naming them explicitly:
-
-```
-dbt run -s spreadsheet__ica_usage_report sat_workflow_run_ica_usage --vars '{ica_usage_full_refresh: true}'
-```
-
-This is lossless only while `tsa.spreadsheet__ica_usage_report` still carries every source row.
-
-## UNLOAD schema
-
-This is implemented as stored procedure via dbt macros. See for more details - https://github.com/umccr/orcahouse-project/issues/94
-
-The [orcavault-run](https://github.com/umccr/orcahouse/tree/main/infra/orcavault-run#the-unload) daily run calls the
-procedure but doesn't deploy it, so its owner redeploys it after a change. Each deploy grants EXECUTE on it to the
-`orcavault_builder` role.
-
-```
-dbt run-operation deploy_unload_schema
-```
-
-```
-dbt run-operation run_unload_schema --args \
-  '{"schema_name": "mart", "s3_bucket_path": "", "iam_role_arn": ""}'
-```
+2. **Make a change** with your agent, spec first:
+   [docs/dev/spec-driven.md](docs/dev/spec-driven.md).
 
 ## Redshift
 
-- Login to the Data Warehouse AWS account console using `AWSPowerUserAccess` role.
-- Navigate to the Redshift QueryEditor v2.
-- Select the `Serverless: orcahouse-dev` warehouse for development.
-- On the connection prompt,
-  - Select `Federated User`
-  - Enter `orcavault` at database name
-  - Click `Create Connection` button
+To query the dev warehouse in a browser:
+
+1. Log in to the Data Warehouse AWS account console with the `AWSPowerUserAccess` role.
+2. Open Redshift Query Editor v2.
+3. Select the `Serverless: orcahouse-dev` warehouse.
+4. In the connection prompt, select `Federated User`, enter `orcavault` as the database name,
+   and click `Create Connection`.
+
+## Documentation
+
+See [docs/](docs/README.md) for setup, architecture, how-to guides and decision records.
