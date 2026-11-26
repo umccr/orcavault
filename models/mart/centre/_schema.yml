@@ -12,6 +12,19 @@ models:
   - name: lims
     description: Listing of the Centre genomic sequencing LIMS metadata in flat table model
 
+  - name: accreditation_lims
+    description: Listing of the Centre genomic sequencing Accreditation LIMS metadata in flat table model
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - library_id
+              - sequencing_run_id
+    columns:
+      - name: label
+        data_tests:
+          - not_null
+
   - name: fastq
     description: Listing of the Centre genomic sequencing unaligned read level file FASTQ S3 locations in flat table model
 

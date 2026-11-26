@@ -9,6 +9,10 @@
     their own prefixed mart schema.
 
 #}
+{# Explicit refs so this test runs after the catalogued marts are built. #}
+-- depends_on: {{ ref('external_lims') }}
+-- depends_on: {{ ref('accreditation_lims') }}
+
 with catalog as (
 
     select table_name from {{ ref('catalog') }}

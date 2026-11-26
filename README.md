@@ -59,6 +59,13 @@ You should expect to see a successful connection.
 07:22:47  All checks passed!
 ```
 
+Install the dbt package dependencies listed in [packages.yml](packages.yml). Do this once per clone, and again after
+`dbt clean`, which removes them. Other dbt commands fail with a compilation error until it is done.
+
+```
+dbt deps
+```
+
 ## Personal schema
 
 Building in your own personal schema is the preferred workflow. It's named after your AWS SSO username by default, run
