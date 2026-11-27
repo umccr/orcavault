@@ -1,7 +1,6 @@
 version: 2
 
 models:
-
   - name: spreadsheet__library_tracking_metadata
     columns:
       - name: assay
@@ -263,3 +262,33 @@ models:
               arguments:
                 values:
                   - spreadsheet__ica_usage_report
+
+  - name: redcap__case
+    description: >
+      Append-only history of REDCap case records, one row per version of a request_id. Columns are read from
+      tsa.redcap__case at run time, so they are not listed here. Drift is caught by the
+      assert_redcap_case_* tests. --full-refresh is ignored; rebuild with the redcap_case_full_refresh var.
+    # request_id repeats across loads (one row per version), but never twice within one load.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - request_id
+              - load_datetime
+    columns:
+      - name: request_id
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: load_datetime
+        data_type: timestamptz
+        data_tests:
+          - not_null
+      - name: record_source
+        data_type: varchar(255)
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - redcap__case
