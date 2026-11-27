@@ -1,0 +1,33 @@
+schema: spec-driven
+
+# Injected into every artifact's instructions. Keep it to constraints an agent cannot infer;
+# agent rules live in AGENTS.md and how we use OpenSpec is in docs/dev/spec-driven.md.
+context: |
+  OrcaVault is a dbt (SQL) project on Amazon Redshift: Data Vault 2.0 raw/business vault
+  plus consumer marts. Read AGENTS.md before writing artifacts.
+  Never include real patient, sample, subject or library identifiers or query results in
+  artifacts; use synthetic examples.
+  Long-lived context lives outside OpenSpec: docs/architecture/ (how it is built) and
+  docs/decisions/ (why). Link to them instead of repeating them.
+
+rules:
+  proposal:
+    - For a retrospective baseline, say so in Why and state that no code changes.
+    - If the change touches the raw vault or PSA, mart columns, or an existing spec, say that a maintainer should review it as a draft PR before apply.
+  specs:
+    - Describe observable behaviour (tables, columns, run outcomes), not macro internals.
+    - Use synthetic values in scenarios (e.g. `L_A`, `seq_1`), never real IDs.
+  design:
+    - State the affected layers and models, and the downstream impact (dbt `+` selector).
+    - For incremental or vault models, state whether a full refresh of shared or production schemas is needed, and whether load history is preserved. Follow docs/architecture/data-vault.md; a raw vault, PSA or hub refresh is a design warning that needs a maintainer.
+    - Call out any change to mart columns, as marts are a contract for consumers.
+  tasks:
+    - Include validating the change in a personal schema (`dbt build -s <model>+ -f`) and running `make check`.
+    - "For a change to an incremental model, include a unit test with `is_incremental: true`, so the change is proven without a full refresh."
+    - Include updating docs/ or adding a decision record when the change alters structure or makes a real decision.
+
+operations:
+  archive:
+    guidance:
+      - Promote structural outcomes to docs/architecture/ and real decisions to docs/decisions/ in the same branch.
+      - After archiving, fix relative links in the archived proposal.md and design.md; the folder moves one level deeper.
