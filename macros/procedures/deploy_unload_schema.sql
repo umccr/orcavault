@@ -14,10 +14,11 @@
         v_sql_csv VARCHAR(2000);
         v_count INT;
     BEGIN
-        -- 1. Security Check: Validate that the requested schema actually exists
+        -- 1. Security Check: Validate that the requested schema actually exists. pg_namespace has every
+        -- schema, whereas information_schema.schemata only has the schemas that the caller owns.
         SELECT COUNT(*) INTO v_count
-        FROM information_schema.schemata
-        WHERE schema_name = p_schema_name;
+        FROM pg_namespace
+        WHERE nspname = p_schema_name;
 
         IF v_count = 0 THEN
             RAISE EXCEPTION 'Schema "%" does not exist in this database.', p_schema_name;
@@ -54,5 +55,10 @@
     END;
     $$;
 
+  {% endcall %}
+
+   -- Only the owner and superusers can call a new procedure, so EXECUTE is granted to the orcavault_builder role.
+  {% call statement('grant_unload_schema', fetch_result=False) %}
+    GRANT EXECUTE ON PROCEDURE public.unload_schema(VARCHAR, VARCHAR, VARCHAR) TO ROLE orcavault_builder;
   {% endcall %}
 {% endmacro %}
